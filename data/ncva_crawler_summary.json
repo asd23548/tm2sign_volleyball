@@ -1,0 +1,35 @@
+{
+  "finished_at": "2026-07-30T05:26:51.362913+00:00",
+  "counts": {
+    "events": 8,
+    "divisions": 54,
+    "teams": 3302,
+    "matches": 35739,
+    "standings": 3302
+  },
+  "match_metrics": {
+    "matches": 35739,
+    "with_points": 35721,
+    "deciding_sets": 12078,
+    "tight_sets": 12869
+  },
+  "roster_counts": {
+    "players": 0,
+    "player_season_stints": 0,
+    "staff": 0,
+    "staff_season_stints": 0
+  },
+  "roster_restored": {},
+  "events": [
+    {
+      "event_id": "2585",
+      "divisions": 8,
+      "teams": 78,
+      "matches": 0,
+      "standings": 78,
+      "deciding_sets": 0,
+      "tight_sets": 0
+    }
+  ],
+  "errors": []
+}

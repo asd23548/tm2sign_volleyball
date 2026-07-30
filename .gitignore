@@ -24,5 +24,9 @@ data/team_page_api_raw.jsonl
 data/*_network_capture.json
 data/*_api_capture.json
 
+# Local DB backups (keep volleyball.db)
+database/volleyball_backup_*.db
+database/volleyball_pre_sprint1_*.db
+
 scripts/_tmp_*.py
 

@@ -1,24 +1,14 @@
-"""Initialize SQLite database from schema.sql."""
+"""Initialize SQLite database (delegates to Sprint 1 schema)."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from .connection import get_connection, DB_PATH
-
-SCHEMA_PATH = Path(__file__).with_name("schema.sql")
+from database.init_sqlite import init_db as _init_sprint1
 
 
 def init_database(db_path: Path | str | None = None) -> Path:
-    path = Path(db_path) if db_path else DB_PATH
-    schema = SCHEMA_PATH.read_text(encoding="utf-8")
-    conn = get_connection(path)
-    try:
-        conn.executescript(schema)
-        conn.commit()
-    finally:
-        conn.close()
-    return path
+    return _init_sprint1(db_path, reset=False)
 
 
 if __name__ == "__main__":
