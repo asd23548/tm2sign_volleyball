@@ -142,10 +142,16 @@ def load_staff_stints(staff_id: str | None = None) -> pd.DataFrame:
     return _read_sql(sql + " ORDER BY st.last_name, ss.season_year")
 
 
-def player_search(query: str, limit: int = 50) -> pd.DataFrame:
+def player_search(query: str, limit: int = 50, gender: str | None = None) -> pd.DataFrame:
     q = f"%{(query or '').strip()}%"
+    gender_sql = ""
+    params: list = [q, q, q]
+    if gender in ("Girls", "Boys"):
+        gender_sql = " AND (e.gender = ? OR t.gender_code = ?)"
+        params.extend([gender, "G" if gender == "Girls" else "B"])
+    params.append(limit)
     return _read_sql(
-        """
+        f"""
         SELECT p.player_id, p.full_name, p.gender,
                COUNT(DISTINCT s.event_id) AS seasons,
                MIN(s.season_year) AS first_year,
@@ -154,10 +160,100 @@ def player_search(query: str, limit: int = 50) -> pd.DataFrame:
         FROM players p
         LEFT JOIN player_season_stints s ON s.player_id = p.player_id
         LEFT JOIN teams t ON t.team_id = s.team_id
-        WHERE p.full_name LIKE ? OR p.last_name LIKE ? OR p.first_name LIKE ?
+        LEFT JOIN events e ON e.event_id = s.event_id
+        WHERE (p.full_name LIKE ? OR p.last_name LIKE ? OR p.first_name LIKE ?)
+          {gender_sql}
         GROUP BY p.player_id, p.full_name, p.gender
         ORDER BY seasons DESC, p.last_name, p.first_name
         LIMIT ?
         """,
-        [q, q, q, limit],
+        params,
+    )
+
+
+def player_browse_clubs(gender: str | None = None) -> pd.DataFrame:
+    where = "WHERE c.club_name IS NOT NULL"
+    params: list = []
+    if gender in ("Girls", "Boys"):
+        where += " AND (e.gender = ? OR t.gender_code = ?)"
+        params.extend([gender, "G" if gender == "Girls" else "B"])
+    return _read_sql(
+        f"""
+        SELECT c.club_id, c.club_name,
+               COUNT(DISTINCT s.player_id) AS players,
+               COUNT(DISTINCT s.event_id) AS seasons
+        FROM player_season_stints s
+        JOIN teams t ON t.team_id = s.team_id
+        JOIN clubs c ON c.club_id = COALESCE(s.club_id, t.club_id)
+        LEFT JOIN events e ON e.event_id = s.event_id
+        {where}
+        GROUP BY c.club_id, c.club_name
+        ORDER BY c.club_name
+        """,
+        params,
+    )
+
+
+def player_browse_seasons(club_id: str, gender: str | None = None) -> pd.DataFrame:
+    params: list = [club_id]
+    gender_sql = ""
+    if gender in ("Girls", "Boys"):
+        gender_sql = " AND (e.gender = ? OR t.gender_code = ?)"
+        params.extend([gender, "G" if gender == "Girls" else "B"])
+    return _read_sql(
+        f"""
+        SELECT e.event_id, e.event_name, e.season_year, e.start_date,
+               COUNT(DISTINCT s.player_id) AS players,
+               COUNT(DISTINCT s.team_id) AS teams
+        FROM player_season_stints s
+        JOIN teams t ON t.team_id = s.team_id
+        JOIN events e ON e.event_id = s.event_id
+        WHERE COALESCE(s.club_id, t.club_id) = ?
+          {gender_sql}
+        GROUP BY e.event_id, e.event_name, e.season_year, e.start_date
+        ORDER BY e.start_date
+        """,
+        params,
+    )
+
+
+def player_browse_teams(club_id: str, event_id: str, gender: str | None = None) -> pd.DataFrame:
+    params: list = [club_id, str(event_id)]
+    gender_sql = ""
+    if gender in ("Girls", "Boys"):
+        gender_sql = " AND (e.gender = ? OR t.gender_code = ?)"
+        params.extend([gender, "G" if gender == "Girls" else "B"])
+    return _read_sql(
+        f"""
+        SELECT t.team_id, t.team_name, t.program_id, t.program_label, t.age_group,
+               COUNT(DISTINCT s.player_id) AS players
+        FROM player_season_stints s
+        JOIN teams t ON t.team_id = s.team_id
+        LEFT JOIN events e ON e.event_id = s.event_id
+        WHERE COALESCE(s.club_id, t.club_id) = ?
+          AND s.event_id = ?
+          {gender_sql}
+        GROUP BY t.team_id, t.team_name, t.program_id, t.program_label, t.age_group
+        ORDER BY t.team_name
+        """,
+        params,
+    )
+
+
+def player_browse_players(team_id: str, event_id: str | None = None) -> pd.DataFrame:
+    params: list = [team_id]
+    event_sql = ""
+    if event_id:
+        event_sql = " AND s.event_id = ?"
+        params.append(str(event_id))
+    return _read_sql(
+        f"""
+        SELECT p.player_id, p.full_name, s.uniform_number, s.season_year
+        FROM player_season_stints s
+        JOIN players p ON p.player_id = s.player_id
+        WHERE s.team_id = ?
+          {event_sql}
+        ORDER BY p.last_name, p.first_name
+        """,
+        params,
     )

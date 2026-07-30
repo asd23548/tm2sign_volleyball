@@ -22,7 +22,25 @@ def _read_sql(sql: str, params: tuple | list | None = None) -> pd.DataFrame:
 def load_matches_enriched() -> pd.DataFrame:
     sql = """
     SELECT
-        m.*,
+        m.match_id,
+        m.event_id,
+        m.division_id,
+        m.match_date,
+        m.stage,
+        m.team_a_id,
+        m.team_b_id,
+        m.raw_team_a_id,
+        m.raw_team_b_id,
+        m.team_a_score,
+        m.team_b_score,
+        m.set_scores,
+        m.winner_id,
+        m.seed_a,
+        m.seed_b,
+        m.team_a_pts_won,
+        m.team_b_pts_won,
+        m.is_deciding_set_played,
+        m.is_tight_set,
         ta.team_name AS team_a_name,
         tb.team_name AS team_b_name,
         ta.age_group AS age_group,
@@ -41,11 +59,14 @@ def load_matches_enriched() -> pd.DataFrame:
         ra.region_name AS region_a_name,
         rb.region_name AS region_b_name,
         d.division_name,
-        d.event_id,
         e.event_name,
         e.location,
         e.region_id AS event_region_id,
         e.start_date,
+        e.season_year,
+        e.gender AS event_gender,
+        ta.gender_code AS team_a_gender,
+        tb.gender_code AS team_b_gender,
         er.region_name AS event_region_name
     FROM matches m
     LEFT JOIN teams ta ON ta.team_id = m.team_a_id
@@ -55,14 +76,42 @@ def load_matches_enriched() -> pd.DataFrame:
     LEFT JOIN regions ra ON ra.region_id = ca.region_id
     LEFT JOIN regions rb ON rb.region_id = cb.region_id
     LEFT JOIN divisions d ON d.division_id = m.division_id
-    LEFT JOIN events e ON e.event_id = d.event_id
+    LEFT JOIN events e ON e.event_id = COALESCE(m.event_id, d.event_id)
     LEFT JOIN regions er ON er.region_id = e.region_id
     """
     df = _read_sql(sql)
     if df.empty:
         return df
+    # Guard against accidental duplicate column labels from joins
+    df = df.loc[:, ~df.columns.duplicated()].copy()
     df["set_scores_parsed"] = df["set_scores"].apply(_parse_sets)
+    df["gender"] = df.apply(_infer_match_gender, axis=1)
     return df
+
+
+def _infer_match_gender(row: pd.Series) -> str | None:
+    eg = row.get("event_gender")
+    if isinstance(eg, str) and eg in ("Girls", "Boys"):
+        return eg
+    for key in ("team_a_gender", "team_b_gender"):
+        g = row.get(key)
+        if g == "G":
+            return "Girls"
+        if g == "B":
+            return "Boys"
+    for key in ("program_a_id", "program_b_id"):
+        pid = row.get(key)
+        if isinstance(pid, str) and pid.startswith("G|"):
+            return "Girls"
+        if isinstance(pid, str) and pid.startswith("B|"):
+            return "Boys"
+    name = str(row.get("event_name") or "")
+    lower = name.lower()
+    if "girl" in lower:
+        return "Girls"
+    if "boy" in lower:
+        return "Boys"
+    return None
 
 
 def load_programs() -> pd.DataFrame:
@@ -101,16 +150,39 @@ def load_programs() -> pd.DataFrame:
 
 
 def load_teams() -> pd.DataFrame:
-    return _read_sql(
+    df = _read_sql(
         """
-        SELECT t.*, c.club_name, c.region_id, r.region_name, r.state
+        SELECT
+            t.team_id,
+            t.event_id,
+            t.division_id,
+            t.team_name,
+            t.club_id,
+            COALESCE(c.club_name, t.club_name) AS club_name,
+            COALESCE(c.region_id, t.region_id) AS region_id,
+            r.region_name,
+            r.state,
+            t.age_group,
+            t.age_num,
+            t.cohort_year,
+            t.alt_code,
+            t.gender_code,
+            t.tier_label,
+            t.program_id,
+            t.program_label,
+            t.initial_seed,
+            t.final_rank,
+            t.status
         FROM teams t
         LEFT JOIN clubs c ON c.club_id = t.club_id
-        LEFT JOIN regions r ON r.region_id = c.region_id
+        LEFT JOIN regions r ON r.region_id = COALESCE(c.region_id, t.region_id)
         WHERE t.team_id LIKE 'ST-%'
         ORDER BY t.team_name
         """
     )
+    if df.empty:
+        return df
+    return df.loc[:, ~df.columns.duplicated()].copy()
 
 
 def load_rankings_enriched() -> pd.DataFrame:
@@ -124,12 +196,16 @@ def load_rankings_enriched() -> pd.DataFrame:
         t.program_id,
         t.program_label,
         t.club_id,
+        t.gender_code,
+        t.status AS team_status,
         c.club_name,
         c.region_id,
         reg.region_name,
         d.division_name,
         e.event_name,
-        e.start_date
+        e.start_date,
+        e.season_year,
+        e.gender AS event_gender
     FROM rankings r
     JOIN teams t ON t.team_id = r.team_id
     LEFT JOIN clubs c ON c.club_id = t.club_id
@@ -137,7 +213,21 @@ def load_rankings_enriched() -> pd.DataFrame:
     LEFT JOIN divisions d ON d.division_id = r.division_id
     LEFT JOIN events e ON e.event_id = r.event_id
     """
-    return _read_sql(sql)
+    df = _read_sql(sql)
+    if df.empty:
+        return df
+
+    def _g(row):
+        if row.get("event_gender") in ("Girls", "Boys"):
+            return row["event_gender"]
+        if row.get("gender_code") == "G":
+            return "Girls"
+        if row.get("gender_code") == "B":
+            return "Boys"
+        return None
+
+    df["gender"] = df.apply(_g, axis=1)
+    return df
 
 
 def _parse_sets(raw) -> list[dict]:

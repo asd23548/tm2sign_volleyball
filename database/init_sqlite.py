@@ -210,6 +210,8 @@ CREATE TABLE IF NOT EXISTS roster_fetch_log (
     team_id      TEXT PRIMARY KEY,
     fetched_at   TEXT,
     status       TEXT,
+    players      INTEGER,
+    staff        INTEGER,
     player_count INTEGER,
     staff_count  INTEGER,
     error        TEXT
