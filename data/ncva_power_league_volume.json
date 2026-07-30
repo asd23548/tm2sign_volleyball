@@ -1,0 +1,66 @@
+[
+  {
+    "id": 1224,
+    "name": "2022 NCVA Boys Power League",
+    "start_date": "2022-09-10",
+    "matches": 100,
+    "scheduler_teams": 205,
+    "registrations": -1
+  },
+  {
+    "id": 1238,
+    "name": "2022/2023 NCVA Girls Power League",
+    "start_date": "2022-12-10",
+    "matches": 100,
+    "scheduler_teams": 376,
+    "registrations": -1
+  },
+  {
+    "id": 1480,
+    "name": "2023 NCVA Boys Power League",
+    "start_date": "2023-09-09",
+    "matches": 100,
+    "scheduler_teams": 280,
+    "registrations": -1
+  },
+  {
+    "id": 1545,
+    "name": "2024 NCVA Girls Power League",
+    "start_date": "2024-01-06",
+    "matches": 100,
+    "scheduler_teams": 631,
+    "registrations": -1
+  },
+  {
+    "id": 1784,
+    "name": "2024-2025 NCVA Boys Power League",
+    "start_date": "2024-09-14",
+    "matches": 100,
+    "scheduler_teams": 73,
+    "registrations": 63
+  },
+  {
+    "id": 1823,
+    "name": "2025 NCVA Girls Power League",
+    "start_date": "2025-01-04",
+    "matches": 100,
+    "scheduler_teams": 770,
+    "registrations": 532
+  },
+  {
+    "id": 2136,
+    "name": "2026 NCVA Girls Power League",
+    "start_date": "2026-01-10",
+    "matches": 100,
+    "scheduler_teams": 889,
+    "registrations": 738
+  },
+  {
+    "id": 2585,
+    "name": "2027 NCVA Girls Power League",
+    "start_date": "2027-01-09",
+    "matches": 0,
+    "scheduler_teams": 78,
+    "registrations": 277
+  }
+]

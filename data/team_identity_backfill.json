@@ -1,0 +1,280 @@
+{
+  "teams_updated": 4236,
+  "programs": 1553,
+  "teams_remaining": 3302,
+  "orphan_ct_removed": 934,
+  "with_program": 3302,
+  "distinct_program_labels": 1202,
+  "absolute_black_sample": [
+    {
+      "team_id": "ST-247457",
+      "team_name": "Absolute 10 Black",
+      "age_group": "10U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G10ABSOL1NC",
+      "age_num": 10
+    },
+    {
+      "team_id": "ST-158328",
+      "team_name": "Absolute 11 Black",
+      "age_group": "11U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G11ABSOL1NC",
+      "age_num": 11
+    },
+    {
+      "team_id": "ST-191559",
+      "team_name": "Absolute 11 Black",
+      "age_group": "11U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G11ABSOL1NC",
+      "age_num": 11
+    },
+    {
+      "team_id": "ST-225499",
+      "team_name": "Absolute 11 Black",
+      "age_group": "11U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G11ABSOL1NC",
+      "age_num": 11
+    },
+    {
+      "team_id": "ST-247458",
+      "team_name": "Absolute 11 Black",
+      "age_group": "11U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G11ABSOL1NC",
+      "age_num": 11
+    },
+    {
+      "team_id": "ST-158312",
+      "team_name": "Absolute 12 Black",
+      "age_group": "12U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G12ABSOL1NC",
+      "age_num": 12
+    },
+    {
+      "team_id": "ST-191487",
+      "team_name": "Absolute 12 Black",
+      "age_group": "12U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G12ABSOL1NC",
+      "age_num": 12
+    },
+    {
+      "team_id": "ST-227881",
+      "team_name": "Absolute 12 Black",
+      "age_group": "12U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G12ABSOL1NC",
+      "age_num": 12
+    },
+    {
+      "team_id": "ST-247460",
+      "team_name": "Absolute 12 Black",
+      "age_group": "12U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G12ABSOL1NC",
+      "age_num": 12
+    },
+    {
+      "team_id": "ST-157659",
+      "team_name": "Absolute 13 Black",
+      "age_group": "13U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G13ABSOL1NC",
+      "age_num": 13
+    },
+    {
+      "team_id": "ST-193693",
+      "team_name": "Absolute 13 Black",
+      "age_group": "13U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G13ABSOL1NC",
+      "age_num": 13
+    },
+    {
+      "team_id": "ST-227938",
+      "team_name": "Absolute 13 Black",
+      "age_group": "13U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G13ABSOL1NC",
+      "age_num": 13
+    },
+    {
+      "team_id": "ST-247463",
+      "team_name": "Absolute 13 Black",
+      "age_group": "13U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G13ABSOL1NC",
+      "age_num": 13
+    },
+    {
+      "team_id": "ST-156806",
+      "team_name": "Absolute 14 Black",
+      "age_group": "14U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G14ABSOL1NC",
+      "age_num": 14
+    },
+    {
+      "team_id": "ST-189650",
+      "team_name": "Absolute 14 Black",
+      "age_group": "14U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G14ABSOL1NC",
+      "age_num": 14
+    },
+    {
+      "team_id": "ST-227598",
+      "team_name": "Absolute 14 Black",
+      "age_group": "14U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G14ABSOL1NC",
+      "age_num": 14
+    },
+    {
+      "team_id": "ST-247466",
+      "team_name": "Absolute 14 Black",
+      "age_group": "14U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G14ABSOL1NC",
+      "age_num": 14
+    },
+    {
+      "team_id": "ST-156889",
+      "team_name": "Absolute 15 Black",
+      "age_group": "15U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G15ABSOL1NC",
+      "age_num": 15
+    },
+    {
+      "team_id": "ST-191392",
+      "team_name": "Absolute 15 Black",
+      "age_group": "15U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G15ABSOL1NC",
+      "age_num": 15
+    },
+    {
+      "team_id": "ST-226409",
+      "team_name": "Absolute 15 Black",
+      "age_group": "15U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G15ABSOL1NC",
+      "age_num": 15
+    },
+    {
+      "team_id": "ST-245878",
+      "team_name": "Absolute 15 Black",
+      "age_group": "15U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G15ABSOL1NC",
+      "age_num": 15
+    },
+    {
+      "team_id": "ST-158399",
+      "team_name": "Absolute 16 Black",
+      "age_group": "16U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G16ABSOL1NC",
+      "age_num": 16
+    },
+    {
+      "team_id": "ST-189474",
+      "team_name": "Absolute 16 Black",
+      "age_group": "16U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G16ABSOL1NC",
+      "age_num": 16
+    },
+    {
+      "team_id": "ST-226297",
+      "team_name": "Absolute 16 Black",
+      "age_group": "16U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G16ABSOL1NC",
+      "age_num": 16
+    },
+    {
+      "team_id": "ST-248870",
+      "team_name": "Absolute 16 Black",
+      "age_group": "16U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G16ABSOL1NC",
+      "age_num": 16
+    },
+    {
+      "team_id": "ST-149444",
+      "team_name": "Absolute 17 Black",
+      "age_group": "17U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G17ABSOL1NC",
+      "age_num": 17
+    },
+    {
+      "team_id": "ST-184815",
+      "team_name": "Absolute 17 Black",
+      "age_group": "17U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G17ABSOL1NC",
+      "age_num": 17
+    },
+    {
+      "team_id": "ST-202081",
+      "team_name": "Absolute 17 Black",
+      "age_group": "17U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G17ABSOL1NC",
+      "age_num": 17
+    },
+    {
+      "team_id": "ST-220963",
+      "team_name": "Absolute 17 Black",
+      "age_group": "17U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G17ABSOL1NC",
+      "age_num": 17
+    },
+    {
+      "team_id": "ST-238845",
+      "team_name": "Absolute 17 Black",
+      "age_group": "17U",
+      "program_id": "G|ABSOL|1|NC",
+      "program_label": "Absolute Black",
+      "alt_code": "G17ABSOL1NC",
+      "age_num": 17
+    }
+  ]
+}

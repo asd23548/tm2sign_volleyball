@@ -1,0 +1,246 @@
+[
+  {
+    "status": 200,
+    "url": "https://tm2sign.com/api/public/scheduler-teams/245850",
+    "json": true,
+    "n": null,
+    "keys": [
+      "MODEL",
+      "alternate_identifier",
+      "club_name",
+      "club_team_id",
+      "created_at",
+      "deleted_at",
+      "duplicates",
+      "eventDivision",
+      "event_division_id",
+      "event_id",
+      "event_registration_id",
+      "final_finish_note",
+      "final_finish_position_number",
+      "general_note",
+      "id",
+      "name",
+      "region",
+      "starting_seed_number",
+      "state",
+      "updated_at"
+    ],
+    "preview": "{\"id\":245850,\"event_id\":2136,\"event_division_id\":10256,\"event_registration_id\":137313,\"club_team_id\":9708,\"alternate_identifier\":\"G17SPVCV1NC\",\"name\":\"SPVC 17 Adidas\",\"club_name\":\"Sac Performance Volleyball Club\",\"state\""
+  },
+  {
+    "status": 404,
+    "url": "https://tm2sign.com/api/public/scheduler-team-players?filter[scheduler_team_id]=245850",
+    "json": true,
+    "n": null,
+    "keys": [
+      "message"
+    ],
+    "preview": "{     \"message\": \"The route api/public/scheduler-team-players could not be found.\" }"
+  },
+  {
+    "status": 404,
+    "url": "https://tm2sign.com/api/public/scheduler-players?filter[scheduler_team_id]=245850",
+    "json": true,
+    "n": null,
+    "keys": [
+      "message"
+    ],
+    "preview": "{     \"message\": \"The route api/public/scheduler-players could not be found.\" }"
+  },
+  {
+    "status": 404,
+    "url": "https://tm2sign.com/api/public/scheduler-players?filter[event_id]=2136",
+    "json": true,
+    "n": null,
+    "keys": [
+      "message"
+    ],
+    "preview": "{     \"message\": \"The route api/public/scheduler-players could not be found.\" }"
+  },
+  {
+    "status": 404,
+    "url": "https://tm2sign.com/api/public/players?filter[event_id]=2136",
+    "json": true,
+    "n": null,
+    "keys": [
+      "message"
+    ],
+    "preview": "{     \"message\": \"The route api/public/players could not be found.\" }"
+  },
+  {
+    "status": 404,
+    "url": "https://tm2sign.com/api/public/team-players?filter[event_id]=2136",
+    "json": true,
+    "n": null,
+    "keys": [
+      "message"
+    ],
+    "preview": "{     \"message\": \"The route api/public/team-players could not be found.\" }"
+  },
+  {
+    "status": 404,
+    "url": "https://tm2sign.com/api/public/rosters?filter[event_id]=2136",
+    "json": true,
+    "n": null,
+    "keys": [
+      "message"
+    ],
+    "preview": "{     \"message\": \"The route api/public/rosters could not be found.\" }"
+  },
+  {
+    "status": 404,
+    "url": "https://tm2sign.com/api/public/event-rosters?filter[event_id]=2136",
+    "json": true,
+    "n": null,
+    "keys": [
+      "message"
+    ],
+    "preview": "{     \"message\": \"The route api/public/event-rosters could not be found.\" }"
+  },
+  {
+    "status": 404,
+    "url": "https://tm2sign.com/api/public/team-registration-players?filter[event_registration_id]=137313",
+    "json": true,
+    "n": null,
+    "keys": [
+      "message"
+    ],
+    "preview": "{     \"message\": \"The route api/public/team-registration-players could not be found.\" }"
+  },
+  {
+    "status": 404,
+    "url": "https://tm2sign.com/api/public/team-registrations/137313/players",
+    "json": true,
+    "n": null,
+    "keys": [
+      "message"
+    ],
+    "preview": "{     \"message\": \"The route api/public/team-registrations/137313/players could not be found.\" }"
+  },
+  {
+    "status": 404,
+    "url": "https://tm2sign.com/api/public/players?filter[team_registration_id]=137313",
+    "json": true,
+    "n": null,
+    "keys": [
+      "message"
+    ],
+    "preview": "{     \"message\": \"The route api/public/players could not be found.\" }"
+  },
+  {
+    "status": 404,
+    "url": "https://tm2sign.com/api/public/club-teams/9708",
+    "json": true,
+    "n": null,
+    "keys": [
+      "message"
+    ],
+    "preview": "{     \"message\": \"The route api/public/club-teams/9708 could not be found.\" }"
+  },
+  {
+    "status": 404,
+    "url": "https://tm2sign.com/api/public/club-teams/9708/players",
+    "json": true,
+    "n": null,
+    "keys": [
+      "message"
+    ],
+    "preview": "{     \"message\": \"The route api/public/club-teams/9708/players could not be found.\" }"
+  },
+  {
+    "status": 404,
+    "url": "https://tm2sign.com/api/public/club-team-players?filter[club_team_id]=9708",
+    "json": true,
+    "n": null,
+    "keys": [
+      "message"
+    ],
+    "preview": "{     \"message\": \"The route api/public/club-team-players could not be found.\" }"
+  },
+  {
+    "status": 404,
+    "url": "https://tm2sign.com/api/public/members?filter[event_id]=2136",
+    "json": true,
+    "n": null,
+    "keys": [
+      "message"
+    ],
+    "preview": "{     \"message\": \"The route api/public/members could not be found.\" }"
+  },
+  {
+    "status": 404,
+    "url": "https://tm2sign.com/api/public/athlete-profiles?filter[event_id]=2136",
+    "json": true,
+    "n": null,
+    "keys": [
+      "message"
+    ],
+    "preview": "{     \"message\": \"The route api/public/athlete-profiles could not be found.\" }"
+  },
+  {
+    "status": 404,
+    "url": "https://tm2sign.com/api/public/team-registration-athletes?filter[event_id]=2136",
+    "json": true,
+    "n": null,
+    "keys": [
+      "message"
+    ],
+    "preview": "{     \"message\": \"The route api/public/team-registration-athletes could not be found.\" }"
+  },
+  {
+    "status": 200,
+    "url": "https://tm2sign.com/api/public/team-registrations?filter[event_id]=2136&include[]=players",
+    "json": true,
+    "n": 738,
+    "keys": [
+      "MODEL",
+      "club_meta",
+      "event_division_id",
+      "id",
+      "registration_status_id",
+      "team_meta"
+    ],
+    "preview": "[{\"id\":137603,\"event_division_id\":10257,\"registration_status_id\":2,\"club_meta\":{\"id\":29,\"url\":\"www.redrockvolleyball.com\",\"zip\":\"94063\",\"city\":\"Redwood City\",\"logo\":null,\"name\":\"Red Rock Volleyball Club\",\"uuid\":\"338de69d"
+  },
+  {
+    "status": 200,
+    "url": "https://tm2sign.com/api/public/team-registrations?filter[event_id]=2136&include[]=athletes",
+    "json": true,
+    "n": 738,
+    "keys": [
+      "MODEL",
+      "club_meta",
+      "event_division_id",
+      "id",
+      "registration_status_id",
+      "team_meta"
+    ],
+    "preview": "[{\"id\":137603,\"event_division_id\":10257,\"registration_status_id\":2,\"club_meta\":{\"id\":29,\"url\":\"www.redrockvolleyball.com\",\"zip\":\"94063\",\"city\":\"Redwood City\",\"logo\":null,\"name\":\"Red Rock Volleyball Club\",\"uuid\":\"338de69d"
+  },
+  {
+    "status": 200,
+    "url": "https://tm2sign.com/api/public/team-registrations?filter[event_id]=2136&include[]=roster",
+    "json": true,
+    "n": 738,
+    "keys": [
+      "MODEL",
+      "club_meta",
+      "event_division_id",
+      "id",
+      "registration_status_id",
+      "team_meta"
+    ],
+    "preview": "[{\"id\":137603,\"event_division_id\":10257,\"registration_status_id\":2,\"club_meta\":{\"id\":29,\"url\":\"www.redrockvolleyball.com\",\"zip\":\"94063\",\"city\":\"Redwood City\",\"logo\":null,\"name\":\"Red Rock Volleyball Club\",\"uuid\":\"338de69d"
+  },
+  {
+    "status": 400,
+    "url": "https://tm2sign.com/api/public/scheduler-matches?filter[event_id]=2136&page=1&per_page=1&include[]=players",
+    "json": true,
+    "n": null,
+    "keys": [
+      "message"
+    ],
+    "preview": "{     \"message\": \"Requested include(s) `players` are not allowed. Allowed include(s) are `event, eventCount, eventExists, company, companyCount, companyExists, teamOne, teamOneCount, teamOneExists, teamTwo, teamTwoCount,"
+  }
+]

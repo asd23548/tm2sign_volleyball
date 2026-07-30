@@ -1,0 +1,294 @@
+[
+  {
+    "id": 1224,
+    "name": "2022 NCVA Boys Power League",
+    "state": "CA",
+    "start_date": "2022-09-10",
+    "end_date": "2022-12-18",
+    "divisions": [
+      {
+        "id": 5358,
+        "name": "18/17"
+      },
+      {
+        "id": 5359,
+        "name": "16/15"
+      },
+      {
+        "id": 5360,
+        "name": "14/13"
+      },
+      {
+        "id": 5361,
+        "name": "12/11"
+      }
+    ]
+  },
+  {
+    "id": 1238,
+    "name": "2022/2023 NCVA Girls Power League",
+    "state": "CA",
+    "start_date": "2022-12-10",
+    "end_date": "2023-05-14",
+    "divisions": [
+      {
+        "id": 5409,
+        "name": "11"
+      },
+      {
+        "id": 5410,
+        "name": "12"
+      },
+      {
+        "id": 5411,
+        "name": "13"
+      },
+      {
+        "id": 5412,
+        "name": "14"
+      },
+      {
+        "id": 5413,
+        "name": "15"
+      },
+      {
+        "id": 5414,
+        "name": "16"
+      },
+      {
+        "id": 5415,
+        "name": "17"
+      },
+      {
+        "id": 5416,
+        "name": "18"
+      }
+    ]
+  },
+  {
+    "id": 1480,
+    "name": "2023 NCVA Boys Power League",
+    "state": "CA",
+    "start_date": "2023-09-09",
+    "end_date": "2023-12-17",
+    "divisions": [
+      {
+        "id": 6783,
+        "name": "18/17"
+      },
+      {
+        "id": 6784,
+        "name": "16/15"
+      },
+      {
+        "id": 6785,
+        "name": "14/13"
+      },
+      {
+        "id": 6786,
+        "name": "12s"
+      }
+    ]
+  },
+  {
+    "id": 1545,
+    "name": "2024 NCVA Girls Power League",
+    "state": "CA",
+    "start_date": "2024-01-06",
+    "end_date": "2024-05-19",
+    "divisions": [
+      {
+        "id": 7177,
+        "name": "18/17"
+      },
+      {
+        "id": 7178,
+        "name": "16"
+      },
+      {
+        "id": 7179,
+        "name": "14"
+      },
+      {
+        "id": 7180,
+        "name": "12"
+      },
+      {
+        "id": 7181,
+        "name": "15"
+      },
+      {
+        "id": 7182,
+        "name": "13"
+      },
+      {
+        "id": 7183,
+        "name": "11"
+      },
+      {
+        "id": 8235,
+        "name": "18s Region Championships"
+      },
+      {
+        "id": 8277,
+        "name": "17s Region Championships"
+      }
+    ]
+  },
+  {
+    "id": 1784,
+    "name": "2024-2025 NCVA Boys Power League",
+    "state": "CA",
+    "start_date": "2024-09-14",
+    "end_date": "2024-11-17",
+    "divisions": [
+      {
+        "id": 8382,
+        "name": "18/17"
+      },
+      {
+        "id": 8383,
+        "name": "16/15"
+      },
+      {
+        "id": 8384,
+        "name": "14/13"
+      },
+      {
+        "id": 8385,
+        "name": "12s"
+      }
+    ]
+  },
+  {
+    "id": 1823,
+    "name": "2025 NCVA Girls Power League",
+    "state": "CA",
+    "start_date": "2025-01-04",
+    "end_date": "2025-05-18",
+    "divisions": [
+      {
+        "id": 8647,
+        "name": "18/17"
+      },
+      {
+        "id": 8648,
+        "name": "16"
+      },
+      {
+        "id": 8649,
+        "name": "14"
+      },
+      {
+        "id": 8650,
+        "name": "12"
+      },
+      {
+        "id": 8651,
+        "name": "15"
+      },
+      {
+        "id": 8652,
+        "name": "13"
+      },
+      {
+        "id": 8653,
+        "name": "11"
+      },
+      {
+        "id": 10025,
+        "name": "18s Region Championships"
+      },
+      {
+        "id": 10026,
+        "name": "17s Region Championship"
+      }
+    ]
+  },
+  {
+    "id": 2136,
+    "name": "2026 NCVA Girls Power League",
+    "state": "CA",
+    "start_date": "2026-01-10",
+    "end_date": "2026-05-10",
+    "divisions": [
+      {
+        "id": 10251,
+        "name": "18 Championship"
+      },
+      {
+        "id": 10252,
+        "name": "16"
+      },
+      {
+        "id": 10253,
+        "name": "15"
+      },
+      {
+        "id": 10254,
+        "name": "14"
+      },
+      {
+        "id": 10255,
+        "name": "13"
+      },
+      {
+        "id": 10256,
+        "name": "17 Championship"
+      },
+      {
+        "id": 10257,
+        "name": "12"
+      },
+      {
+        "id": 10258,
+        "name": "11"
+      },
+      {
+        "id": 11649,
+        "name": "18/17 League"
+      }
+    ]
+  },
+  {
+    "id": 2585,
+    "name": "2027 NCVA Girls Power League",
+    "state": "CA",
+    "start_date": "2027-01-09",
+    "end_date": "2027-05-16",
+    "divisions": [
+      {
+        "id": 12186,
+        "name": "18"
+      },
+      {
+        "id": 12187,
+        "name": "16"
+      },
+      {
+        "id": 12188,
+        "name": "15"
+      },
+      {
+        "id": 12189,
+        "name": "14"
+      },
+      {
+        "id": 12190,
+        "name": "13"
+      },
+      {
+        "id": 12191,
+        "name": "17"
+      },
+      {
+        "id": 12192,
+        "name": "12"
+      },
+      {
+        "id": 12193,
+        "name": "11"
+      }
+    ]
+  }
+]

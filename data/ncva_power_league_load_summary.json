@@ -1,0 +1,13 @@
+{
+  "league": "NCVA Power League",
+  "db_counts": {
+    "matches": 35739,
+    "events": 8,
+    "teams": 4236,
+    "rankings": 3302,
+    "clubs": 388,
+    "divisions": 55,
+    "regions": 4
+  },
+  "scored_matches": 35721
+}
