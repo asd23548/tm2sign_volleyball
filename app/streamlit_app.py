@@ -150,6 +150,10 @@ def filter_by_gender(df: pd.DataFrame, gender: str) -> pd.DataFrame:
     return df
 
 
+def _notice(tab_name: str) -> None:
+    st.session_state["cross_link_notice"] = tab_name
+
+
 def jump_to_team_deep_dive(
     program_id: str | None,
     *,
@@ -167,64 +171,279 @@ def jump_to_team_deep_dive(
         "year": "All",
         "stage": "All",
     }
-    st.session_state["deep_dive_jump_notice"] = True
+    _notice("Team / Program Deep-Dive")
     st.rerun()
 
 
-def apply_pending_deep_dive() -> None:
-    """Must run before any widgets keyed team_deep_dive_* are created."""
-    pending = st.session_state.pop("_pending_deep_dive", None)
-    if not pending:
+def jump_to_club(club_id: str | None) -> None:
+    if not club_id:
         return
-    st.session_state["team_deep_dive_program"] = pending["program"]
-    st.session_state["team_deep_dive_season"] = pending.get("season", "All")
-    st.session_state["team_deep_dive_age"] = pending.get("age", "All")
-    st.session_state["team_deep_dive_year"] = pending.get("year", "All")
-    st.session_state["team_deep_dive_stage"] = pending.get("stage", "All")
+    st.session_state["_pending_club"] = {"club_id": str(club_id)}
+    _notice("Club Panorama")
+    st.rerun()
 
 
-def render_team_deep_dive_links(
-    rows: pd.DataFrame,
+def jump_to_player(
+    player_id: str | None = None,
+    *,
+    club_id: str | None = None,
+    event_id: str | None = None,
+    team_id: str | None = None,
+    query: str = "",
+) -> None:
+    """Jump to Player View — either a specific player or browse club→season→team."""
+    if player_id:
+        st.session_state["_pending_player"] = {
+            "mode": "Search",
+            "player_id": player_id,
+            "query": query or "",
+        }
+    elif club_id and event_id and team_id:
+        st.session_state["_pending_player"] = {
+            "mode": "Browse club → season → team",
+            "club_id": str(club_id),
+            "event_id": str(event_id),
+            "team_id": str(team_id),
+        }
+    elif club_id:
+        st.session_state["_pending_player"] = {
+            "mode": "Browse club → season → team",
+            "club_id": str(club_id),
+        }
+    else:
+        return
+    _notice("Player View")
+    st.rerun()
+
+
+def jump_to_coach(
+    staff_id: str | None = None,
+    *,
+    club_id: str | None = None,
+    event_id: str | None = None,
+    team_id: str | None = None,
+    query: str = "",
+) -> None:
+    """Jump to Coach View — either a specific coach or browse club→season→team."""
+    if staff_id:
+        st.session_state["_pending_coach"] = {
+            "mode": "Search",
+            "staff_id": staff_id,
+            "query": query or "",
+        }
+    elif club_id and event_id and team_id:
+        st.session_state["_pending_coach"] = {
+            "mode": "Browse club → season → team",
+            "club_id": str(club_id),
+            "event_id": str(event_id),
+            "team_id": str(team_id),
+        }
+    elif club_id:
+        st.session_state["_pending_coach"] = {
+            "mode": "Browse club → season → team",
+            "club_id": str(club_id),
+        }
+    else:
+        return
+    _notice("Coach View")
+    st.rerun()
+
+
+def apply_pending_jumps() -> None:
+    """Apply queued cross-view jumps before any target widgets are created."""
+    pending = st.session_state.pop("_pending_deep_dive", None)
+    if pending:
+        st.session_state["team_deep_dive_program"] = pending["program"]
+        st.session_state["team_deep_dive_season"] = pending.get("season", "All")
+        st.session_state["team_deep_dive_age"] = pending.get("age", "All")
+        st.session_state["team_deep_dive_year"] = pending.get("year", "All")
+        st.session_state["team_deep_dive_stage"] = pending.get("stage", "All")
+
+    pending = st.session_state.pop("_pending_club", None)
+    if pending and pending.get("club_id"):
+        st.session_state["club_panorama_focus"] = pending["club_id"]
+
+    pending = st.session_state.pop("_pending_player", None)
+    if pending:
+        st.session_state["player_pick_mode"] = pending.get("mode", "Search")
+        if pending.get("player_id"):
+            st.session_state["player_view_player"] = pending["player_id"]
+            st.session_state["player_search_q"] = pending.get("query", "")
+        if pending.get("club_id"):
+            st.session_state["player_browse_club"] = pending["club_id"]
+        if pending.get("event_id"):
+            st.session_state["player_browse_season"] = str(pending["event_id"])
+        if pending.get("team_id"):
+            st.session_state["player_browse_team"] = pending["team_id"]
+
+    pending = st.session_state.pop("_pending_coach", None)
+    if pending:
+        st.session_state["coach_pick_mode"] = pending.get("mode", "Search")
+        if pending.get("staff_id"):
+            st.session_state["coach_view_staff"] = pending["staff_id"]
+            st.session_state["coach_search_q"] = pending.get("query", "")
+        if pending.get("club_id"):
+            st.session_state["coach_browse_club"] = pending["club_id"]
+        if pending.get("event_id"):
+            st.session_state["coach_browse_season"] = str(pending["event_id"])
+        if pending.get("team_id"):
+            st.session_state["coach_browse_team"] = pending["team_id"]
+
+
+def resolve_row_context(
+    row: pd.Series | dict,
+    *,
+    teams_df: pd.DataFrame | None = None,
+    programs_df: pd.DataFrame | None = None,
+    default_program_id: str | None = None,
+) -> dict:
+    """Fill club_id / team_id / program_id from row + lookup tables when missing."""
+    get = row.get if hasattr(row, "get") else lambda k, d=None: row[k] if k in row else d
+    program_id = get("program_id") or get("team_program_id") or default_program_id
+    event_id = str(get("event_id")) if pd.notna(get("event_id")) else None
+    age_group = get("age_group")
+    if not age_group and pd.notna(get("age_num")):
+        age_group = f"{int(get('age_num'))}U"
+    club_id = get("club_id")
+    team_id = get("team_id")
+
+    if (not club_id) and program_id is not None and programs_df is not None and not programs_df.empty:
+        hit = programs_df.loc[programs_df["program_id"] == program_id]
+        if not hit.empty and pd.notna(hit.iloc[0].get("club_id")):
+            club_id = hit.iloc[0]["club_id"]
+
+    if teams_df is not None and not teams_df.empty:
+        if (not team_id) and program_id and event_id:
+            hit = teams_df.loc[
+                (teams_df["program_id"] == program_id)
+                & (teams_df["event_id"].astype(str) == str(event_id))
+            ]
+            if age_group and "age_group" in hit.columns:
+                aged = hit.loc[hit["age_group"] == age_group]
+                if not aged.empty:
+                    hit = aged
+            if not hit.empty:
+                team_id = hit.iloc[0]["team_id"]
+                if not club_id and pd.notna(hit.iloc[0].get("club_id")):
+                    club_id = hit.iloc[0]["club_id"]
+        elif team_id and not club_id:
+            hit = teams_df.loc[teams_df["team_id"] == team_id]
+            if not hit.empty and pd.notna(hit.iloc[0].get("club_id")):
+                club_id = hit.iloc[0]["club_id"]
+            if not program_id and not hit.empty:
+                program_id = hit.iloc[0].get("program_id")
+
+    return {
+        "program_id": program_id,
+        "event_id": event_id,
+        "age_group": age_group,
+        "club_id": club_id if pd.notna(club_id) else None,
+        "team_id": team_id if pd.notna(team_id) else None,
+    }
+
+
+def render_cross_links(    rows: pd.DataFrame,
     *,
     key_prefix: str,
     program_ids: set[str],
     ages: list[str],
+    teams_df: pd.DataFrame | None = None,
+    programs_df: pd.DataFrame | None = None,
+    default_program_id: str | None = None,
+    show_players: bool = True,
+    show_coaches: bool = True,
+    show_club: bool = True,
 ) -> None:
-    """Render one Deep-Dive link button per team/season row."""
+    """Render Team / Club / Players / Coaches jump buttons per season row."""
     if rows is None or rows.empty:
         return
-    st.markdown("**Open in Team / Program Deep-Dive**")
+    st.markdown("**Cross-links**")
     for i, row in rows.iterrows():
-        team_name = row.get("team_name") or row.get("team_id") or "Team"
-        season_year = row.get("season_year")
-        age_group = row.get("age_group") or (
-            f"{int(row['age_num'])}U" if pd.notna(row.get("age_num")) else None
+        ctx = resolve_row_context(
+            row,
+            teams_df=teams_df,
+            programs_df=programs_df,
+            default_program_id=default_program_id,
         )
-        prog_id = row.get("program_id") or row.get("team_program_id")
-        event_id = str(row["event_id"]) if pd.notna(row.get("event_id")) else None
+        team_name = row.get("team_name") or ctx["team_id"] or "Team"
+        season_year = row.get("season_year")
         bits = [str(int(season_year)) if pd.notna(season_year) else "?", str(team_name)]
-        if age_group:
-            bits.append(str(age_group))
+        if ctx["age_group"]:
+            bits.append(str(ctx["age_group"]))
         if pd.notna(row.get("final_rank")):
             bits.append(f"finish {int(row['final_rank'])}")
         if pd.notna(row.get("win_rate")):
             bits.append(f"WR {float(row['win_rate']):.0%}")
         label = " · ".join(bits)
-        cols = st.columns([4.2, 1])
+
+        n_btns = 1 + int(show_club) + int(show_players) + int(show_coaches)
+        cols = st.columns([3.6] + [1] * n_btns)
         cols[0].write(label)
-        can_link = bool(prog_id) and prog_id in program_ids
-        if can_link and cols[1].button("View team", key=f"{key_prefix}_{i}_{row.get('team_id')}_{event_id}"):
-            jump_to_team_deep_dive(prog_id, event_id=event_id, age_group=age_group, ages=ages)
-        elif not can_link:
-            cols[1].caption("n/a")
+        bi = 1
+        can_team = bool(ctx["program_id"]) and ctx["program_id"] in program_ids
+        if can_team and cols[bi].button(
+            "Team",
+            key=f"{key_prefix}_t_{i}_{ctx['team_id']}_{ctx['event_id']}",
+            help="Open Team / Program Deep-Dive",
+        ):
+            jump_to_team_deep_dive(
+                ctx["program_id"],
+                event_id=ctx["event_id"],
+                age_group=ctx["age_group"],
+                ages=ages,
+            )
+        elif not can_team:
+            cols[bi].caption("—")
+        bi += 1
+        if show_club:
+            if ctx["club_id"] and cols[bi].button(
+                "Club",
+                key=f"{key_prefix}_c_{i}_{ctx['club_id']}_{ctx['event_id']}",
+                help="Open Club Panorama",
+            ):
+                jump_to_club(ctx["club_id"])
+            else:
+                cols[bi].caption("—")
+            bi += 1
+        if show_players:
+            can_p = bool(ctx["club_id"] and ctx["event_id"] and ctx["team_id"])
+            if can_p and cols[bi].button(
+                "Players",
+                key=f"{key_prefix}_p_{i}_{ctx['team_id']}_{ctx['event_id']}",
+                help="Browse roster in Player View",
+            ):
+                jump_to_player(
+                    club_id=ctx["club_id"],
+                    event_id=ctx["event_id"],
+                    team_id=ctx["team_id"],
+                )
+            else:
+                cols[bi].caption("—")
+            bi += 1
+        if show_coaches:
+            can_c = bool(ctx["club_id"] and ctx["event_id"] and ctx["team_id"])
+            if can_c and cols[bi].button(
+                "Coaches",
+                key=f"{key_prefix}_s_{i}_{ctx['team_id']}_{ctx['event_id']}",
+                help="Browse staff in Coach View",
+            ):
+                jump_to_coach(
+                    club_id=ctx["club_id"],
+                    event_id=ctx["event_id"],
+                    team_id=ctx["team_id"],
+                )
+            else:
+                cols[bi].caption("—")
+
+
 
 
 def main() -> None:
     st.title("NCVA Power League Analytics")
     st.caption("Full historical Power League — program lineage across ages/years")
 
-    # Apply queued Deep-Dive jumps before any team_deep_dive_* widgets exist
-    apply_pending_deep_dive()
+    # Apply queued cross-view jumps before target widgets exist
+    apply_pending_jumps()
 
     matches_all = cached_matches()
     rankings_all = cached_rankings()
@@ -327,10 +546,11 @@ def main() -> None:
         top = pc.index[0] if len(pc) else prog["program_id"].iloc[0]
         default_idx = int(prog["program_id"].tolist().index(top)) if top in program_id_set else 0
 
-    if st.session_state.pop("deep_dive_jump_notice", None):
-        st.success(
-            "Deep-Dive filters updated — open the **Team / Program Deep-Dive** tab."
-        )
+    notice = st.session_state.pop("cross_link_notice", None)
+    if notice is None and st.session_state.pop("deep_dive_jump_notice", None):
+        notice = "Team / Program Deep-Dive"
+    if notice:
+        st.success(f"Filters updated — open the **{notice}** tab.")
 
     st.sidebar.metric("Matches", f"{len(matches):,}")
     st.sidebar.metric("Programs", f"{len(prog):,}")
@@ -430,12 +650,140 @@ def main() -> None:
                 width="stretch",
                 hide_index=True,
             )
-            render_team_deep_dive_links(
+            render_cross_links(
                 traj,
                 key_prefix="traj_dd",
                 program_ids=program_id_set,
                 ages=ages,
+                teams_df=teams,
+                programs_df=programs,
+                default_program_id=program_id,
+                show_players=False,
+                show_coaches=False,
             )
+
+        # --- Team roster (players + coaches) for the focused team ---
+        st.subheader("Team roster")
+        st.caption("Players and coaches for the selected program / season / age — click through to their views.")
+        team_pool = teams.loc[teams["program_id"] == program_id].copy() if "program_id" in teams.columns else pd.DataFrame()
+        if not team_pool.empty:
+            if season != "All" and "event_id" in team_pool.columns:
+                team_pool = team_pool.loc[team_pool["event_id"].astype(str) == str(season)]
+            if age != "All" and "age_group" in team_pool.columns:
+                team_pool = team_pool.loc[team_pool["age_group"] == age]
+            if year_val is not None and "event_id" in team_pool.columns and "start_date" in event_opts.columns:
+                year_events = set(
+                    event_opts.loc[
+                        pd.to_datetime(event_opts["start_date"], errors="coerce").dt.year == year_val,
+                        "event_id",
+                    ]
+                    .astype(str)
+                    .tolist()
+                )
+                team_pool = team_pool.loc[team_pool["event_id"].astype(str).isin(year_events)]
+            # Newest seasons first for the default pick
+            if "event_id" in team_pool.columns and "start_date" in event_opts.columns:
+                ev_year = event_opts[["event_id", "start_date"]].copy()
+                ev_year["event_id"] = ev_year["event_id"].astype(str)
+                ev_year["_yr"] = pd.to_datetime(ev_year["start_date"], errors="coerce").dt.year
+                team_pool = team_pool.copy()
+                team_pool["_eid"] = team_pool["event_id"].astype(str)
+                team_pool = team_pool.merge(
+                    ev_year[["event_id", "_yr"]].rename(columns={"event_id": "_eid"}),
+                    on="_eid",
+                    how="left",
+                ).sort_values(["_yr", "age_group", "team_name"], ascending=[False, True, True])
+        if team_pool.empty:
+            st.info("No team rows for these Deep-Dive filters (try All seasons / ages, or pick a season with roster data).")
+        else:
+            def _team_label(tid: str) -> str:
+                row = team_pool.loc[team_pool["team_id"] == tid].iloc[0]
+                bits = []
+                if pd.notna(row.get("_yr")):
+                    bits.append(str(int(row["_yr"])))
+                elif pd.notna(row.get("event_id")):
+                    ev = event_opts.loc[event_opts["event_id"].astype(str) == str(row["event_id"])]
+                    if not ev.empty and pd.notna(ev.iloc[0].get("start_date")):
+                        try:
+                            bits.append(str(int(str(ev.iloc[0]["start_date"])[:4])))
+                        except Exception:
+                            pass
+                bits.append(str(row.get("team_name") or tid))
+                if pd.notna(row.get("age_group")):
+                    bits.append(str(row["age_group"]))
+                return " · ".join(bits)
+
+            team_ids = team_pool["team_id"].tolist()
+            if st.session_state.get("deep_dive_roster_team") not in team_ids:
+                st.session_state["deep_dive_roster_team"] = team_ids[0]
+
+            roster_team_id = st.selectbox(
+                "Team",
+                options=team_ids,
+                format_func=_team_label,
+                key="deep_dive_roster_team",
+            )
+            tmeta = team_pool.loc[team_pool["team_id"] == roster_team_id].iloc[0]
+            club_id = tmeta.get("club_id")
+            event_id = str(tmeta["event_id"]) if pd.notna(tmeta.get("event_id")) else None
+            club_name = tmeta.get("club_name")
+
+            top = st.columns(3)
+            top[0].markdown(f"**{tmeta.get('team_name') or roster_team_id}**")
+            if club_id and top[1].button(
+                f"View club · {club_name or club_id}",
+                key=f"dd_roster_club_{roster_team_id}",
+            ):
+                jump_to_club(club_id)
+            top[2].caption(f"Event `{event_id}` · {tmeta.get('age_group') or ''}")
+
+            players = player_browse_players(roster_team_id, event_id)
+            coaches = coach_browse_coaches(roster_team_id, event_id)
+
+            left, right = st.columns(2)
+            with left:
+                st.markdown(f"**Players** ({len(players)})")
+                if players.empty:
+                    st.caption("No roster loaded for this team/season.")
+                else:
+                    for i, prow in players.iterrows():
+                        cols = st.columns([3.5, 1])
+                        jersey = (
+                            f"#{int(prow['uniform_number'])} "
+                            if pd.notna(prow.get("uniform_number"))
+                            else ""
+                        )
+                        cols[0].write(f"{jersey}{prow['full_name']}")
+                        if cols[1].button(
+                            "View",
+                            key=f"dd_player_{roster_team_id}_{prow['player_id']}_{i}",
+                            help="Open Player View",
+                        ):
+                            jump_to_player(
+                                prow["player_id"],
+                                query=str(prow["full_name"]).split()[-1],
+                            )
+            with right:
+                st.markdown(f"**Coaches / staff** ({len(coaches)})")
+                if coaches.empty:
+                    st.caption("No staff loaded for this team/season.")
+                else:
+                    for i, crow in coaches.iterrows():
+                        cols = st.columns([3.5, 1])
+                        role = f" ({crow['role']})" if pd.notna(crow.get("role")) else ""
+                        cols[0].write(f"{crow['full_name']}{role}")
+                        if cols[1].button(
+                            "View",
+                            key=f"dd_coach_{roster_team_id}_{crow['staff_id']}_{i}",
+                            help="Open Coach View",
+                        ):
+                            jump_to_coach(
+                                crow["staff_id"],
+                                query=str(crow["full_name"]).split()[-1],
+                            )
+
+        if not traj.empty:
+            show = traj.copy()
             if show["season_year"].notna().any() and show["win_rate"].notna().any():
                 fig = px.line(
                     show.dropna(subset=["season_year"]),
@@ -491,6 +839,54 @@ def main() -> None:
         if panorama.empty:
             st.info("No ranking rows available.")
         else:
+            club_opts = panorama["club_id"].tolist()
+            focus_default = st.session_state.get("club_panorama_focus")
+            if focus_default not in club_opts and club_opts:
+                # keep invalid pending from breaking selectbox
+                if "club_panorama_focus" in st.session_state:
+                    del st.session_state["club_panorama_focus"]
+            focus_club = st.selectbox(
+                "Focus club",
+                options=club_opts,
+                format_func=lambda cid: panorama.loc[panorama["club_id"] == cid, "club_name"].iloc[0],
+                key="club_panorama_focus",
+                help="Jump targets and related links use this club",
+            )
+            focus_row = panorama.loc[panorama["club_id"] == focus_club].iloc[0]
+            fc1, fc2, fc3, fc4 = st.columns(4)
+            fc1.metric("Gold", int(focus_row["gold"]))
+            fc2.metric("Silver", int(focus_row["silver"]))
+            fc3.metric("Entries", int(focus_row["entries"]))
+            fc4.metric("Open-tier ratio", f"{float(focus_row['open_tier_ratio']):.1%}")
+
+            # Programs under this club → Deep-Dive
+            club_progs = programs.loc[programs["club_id"] == focus_club].copy() if "club_id" in programs.columns else pd.DataFrame()
+            if not club_progs.empty:
+                st.markdown("**Programs in this club**")
+                for i, prow in club_progs.iterrows():
+                    cols = st.columns([3.5, 1, 1, 1])
+                    cols[0].write(
+                        f"{prow.get('program_label') or prow['program_id']}"
+                        + (f" ({prow.get('gender_code')})" if pd.notna(prow.get("gender_code")) else "")
+                    )
+                    if prow["program_id"] in program_id_set and cols[1].button(
+                        "Team",
+                        key=f"club_prog_dd_{prow['program_id']}",
+                    ):
+                        jump_to_team_deep_dive(prow["program_id"], ages=ages)
+                    elif prow["program_id"] not in program_id_set:
+                        cols[1].caption("—")
+                    if cols[2].button("Players", key=f"club_prog_p_{prow['program_id']}"):
+                        jump_to_player(club_id=focus_club)
+                    if cols[3].button("Coaches", key=f"club_prog_c_{prow['program_id']}"):
+                        jump_to_coach(club_id=focus_club)
+            else:
+                bc1, bc2 = st.columns(2)
+                if bc1.button("Browse players for this club", key=f"club_focus_players_{focus_club}"):
+                    jump_to_player(club_id=focus_club)
+                if bc2.button("Browse coaches for this club", key=f"club_focus_coaches_{focus_club}"):
+                    jump_to_coach(club_id=focus_club)
+
             st.dataframe(panorama, width="stretch", hide_index=True)
             fig = px.bar(
                 panorama,
@@ -670,6 +1066,11 @@ def main() -> None:
             if pick_mode == "Search":
                 q = st.text_input("Search player", placeholder="e.g. Carr, Paige Din", key="player_search_q")
                 hits = player_search(q, gender=g_filter) if q.strip() else players_df.head(100)
+                # Keep a jumped-to player visible even if outside the current hit list
+                sel = st.session_state.get("player_view_player")
+                if sel and (hits.empty or sel not in set(hits["player_id"])):
+                    extra = players_df.loc[players_df["player_id"] == sel]
+                    hits = pd.concat([extra, hits], ignore_index=True).drop_duplicates("player_id")
                 if hits.empty:
                     st.info("No players matched.")
                 else:
@@ -680,9 +1081,12 @@ def main() -> None:
                         )
                         for r in hits.itertuples(index=False)
                     }
+                    opts = list(labels.keys())
+                    if sel in opts:
+                        st.session_state["player_view_player"] = sel
                     pid = st.selectbox(
                         "Player",
-                        options=list(labels.keys()),
+                        options=opts,
                         format_func=lambda x: labels.get(x, x),
                         key="player_view_player",
                     )
@@ -691,22 +1095,39 @@ def main() -> None:
                 if clubs.empty:
                     st.info("No club roster rows for this gender filter.")
                 else:
+                    club_ids = clubs["club_id"].tolist()
+                    pending_club = st.session_state.get("player_browse_club")
+                    if pending_club and pending_club not in club_ids:
+                        club_ids = [pending_club] + club_ids
                     club_id = st.selectbox(
                         "Club",
-                        options=clubs["club_id"].tolist(),
-                        format_func=lambda cid: clubs.loc[clubs["club_id"] == cid, "club_name"].iloc[0],
+                        options=club_ids,
+                        format_func=lambda cid: (
+                            clubs.loc[clubs["club_id"] == cid, "club_name"].iloc[0]
+                            if cid in set(clubs["club_id"])
+                            else str(cid)
+                        ),
                         key="player_browse_club",
                     )
+                    bc1, bc2 = st.columns(2)
+                    if bc1.button("View this club", key="player_browse_to_club"):
+                        jump_to_club(club_id)
+                    if bc2.button("Browse coaches at this club", key="player_browse_to_coaches"):
+                        jump_to_coach(club_id=club_id)
                     seasons = player_browse_seasons(club_id, g_filter)
                     if seasons.empty:
                         st.info("No seasons for this club.")
                     else:
+                        season_ids = [str(x) for x in seasons["event_id"].tolist()]
+                        pending_season = st.session_state.get("player_browse_season")
+                        if pending_season and str(pending_season) not in season_ids:
+                            season_ids = [str(pending_season)] + season_ids
                         event_id = st.selectbox(
                             "Season",
-                            options=seasons["event_id"].tolist(),
+                            options=season_ids,
                             format_func=lambda eid: (
-                                f"{int(seasons.loc[seasons['event_id']==eid,'season_year'].iloc[0]) if pd.notna(seasons.loc[seasons['event_id']==eid,'season_year'].iloc[0]) else '?'} — "
-                                f"{seasons.loc[seasons['event_id']==eid,'event_name'].iloc[0]}"
+                                f"{int(seasons.loc[seasons['event_id'].astype(str)==str(eid),'season_year'].iloc[0]) if (seasons['event_id'].astype(str)==str(eid)).any() and pd.notna(seasons.loc[seasons['event_id'].astype(str)==str(eid),'season_year'].iloc[0]) else '?'} — "
+                                f"{seasons.loc[seasons['event_id'].astype(str)==str(eid),'event_name'].iloc[0] if (seasons['event_id'].astype(str)==str(eid)).any() else eid}"
                             ),
                             key="player_browse_season",
                         )
@@ -714,27 +1135,45 @@ def main() -> None:
                         if team_opts.empty:
                             st.info("No teams for this club/season.")
                         else:
+                            team_ids = team_opts["team_id"].tolist()
+                            pending_team = st.session_state.get("player_browse_team")
+                            if pending_team and pending_team not in team_ids:
+                                team_ids = [pending_team] + team_ids
                             team_id = st.selectbox(
                                 "Team",
-                                options=team_opts["team_id"].tolist(),
+                                options=team_ids,
                                 format_func=lambda tid: (
                                     f"{team_opts.loc[team_opts['team_id']==tid,'team_name'].iloc[0]}"
                                     + (
                                         f" ({team_opts.loc[team_opts['team_id']==tid,'age_group'].iloc[0]})"
-                                        if pd.notna(team_opts.loc[team_opts['team_id']==tid,'age_group'].iloc[0])
+                                        if tid in set(team_opts["team_id"]) and pd.notna(team_opts.loc[team_opts['team_id']==tid,'age_group'].iloc[0])
                                         else ""
                                     )
+                                    if tid in set(team_opts["team_id"])
+                                    else str(tid)
                                 ),
                                 key="player_browse_team",
                             )
-                            # Team deep-dive shortcut from browse path
-                            trow = team_opts.loc[team_opts["team_id"] == team_id].iloc[0]
-                            if st.button("Open this team in Deep-Dive", key="player_browse_team_dd"):
+                            trow = (
+                                team_opts.loc[team_opts["team_id"] == team_id].iloc[0]
+                                if team_id in set(team_opts["team_id"])
+                                else None
+                            )
+                            b1, b2, b3 = st.columns(3)
+                            if trow is not None and b1.button("Open team Deep-Dive", key="player_browse_team_dd"):
                                 jump_to_team_deep_dive(
                                     trow.get("program_id"),
                                     event_id=str(event_id),
                                     age_group=trow.get("age_group"),
                                     ages=ages,
+                                )
+                            if b2.button("View club", key="player_browse_team_club"):
+                                jump_to_club(club_id)
+                            if b3.button("Team coaches", key="player_browse_team_coaches"):
+                                jump_to_coach(
+                                    club_id=club_id,
+                                    event_id=str(event_id),
+                                    team_id=team_id,
                                 )
                             people = player_browse_players(team_id, str(event_id))
                             if people.empty:
@@ -787,12 +1226,16 @@ def main() -> None:
                         lambda x: round(float(x), 3) if pd.notna(x) else x
                     )
                 st.dataframe(show, width="stretch", hide_index=True)
-                render_team_deep_dive_links(
+                render_cross_links(
                     stints,
                     key_prefix=f"player_dd_{pid}",
                     program_ids=program_id_set,
                     ages=ages,
+                    teams_df=teams,
+                    programs_df=programs,
+                    show_players=False,
                 )
+                st.caption("Use **Team / Club / Coaches** to jump to related views for that season.")
 
                 if not show.empty and show["season_year"].notna().any():
                     fig = px.scatter(
@@ -821,7 +1264,7 @@ def main() -> None:
                         fig.update_yaxes(autorange="reversed", title="Final rank")
                     fig.update_layout(height=360, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
                     st.plotly_chart(fig, width="stretch")
-                st.caption("Click **View team** to jump into Team / Program Deep-Dive for that season.")
+                # remove old caption — replaced above
 
     with tab6:
         st.subheader("Coach View")
@@ -847,6 +1290,10 @@ def main() -> None:
             if pick_mode == "Search":
                 q = st.text_input("Search coach", placeholder="e.g. Gill, Braga, Mackin", key="coach_search_q")
                 hits = coach_search(q, gender=g_filter) if q.strip() else coaches_df.head(100)
+                sel = st.session_state.get("coach_view_staff")
+                if sel and (hits.empty or sel not in set(hits["staff_id"])):
+                    extra = coaches_df.loc[coaches_df["staff_id"] == sel]
+                    hits = pd.concat([extra, hits], ignore_index=True).drop_duplicates("staff_id")
                 if hits.empty:
                     st.info("No coaches matched.")
                 else:
@@ -858,10 +1305,13 @@ def main() -> None:
                         for r in hits.itertuples(index=False)
                     }
                     coach_opts = list(labels.keys())
-                    default_idx = next(
-                        (i for i, cid in enumerate(coach_opts) if "gill|aaron" in str(cid).lower()),
-                        0,
-                    )
+                    if sel in coach_opts:
+                        default_idx = coach_opts.index(sel)
+                    else:
+                        default_idx = next(
+                            (i for i, cid in enumerate(coach_opts) if "gill|aaron" in str(cid).lower()),
+                            0,
+                        )
                     sid = st.selectbox(
                         "Coach",
                         options=coach_opts,
@@ -874,22 +1324,39 @@ def main() -> None:
                 if clubs.empty:
                     st.info("No club coach rows for this gender filter.")
                 else:
+                    club_ids = clubs["club_id"].tolist()
+                    pending_club = st.session_state.get("coach_browse_club")
+                    if pending_club and pending_club not in club_ids:
+                        club_ids = [pending_club] + club_ids
                     club_id = st.selectbox(
                         "Club",
-                        options=clubs["club_id"].tolist(),
-                        format_func=lambda cid: clubs.loc[clubs["club_id"] == cid, "club_name"].iloc[0],
+                        options=club_ids,
+                        format_func=lambda cid: (
+                            clubs.loc[clubs["club_id"] == cid, "club_name"].iloc[0]
+                            if cid in set(clubs["club_id"])
+                            else str(cid)
+                        ),
                         key="coach_browse_club",
                     )
+                    bc1, bc2 = st.columns(2)
+                    if bc1.button("View this club", key="coach_browse_to_club"):
+                        jump_to_club(club_id)
+                    if bc2.button("Browse players at this club", key="coach_browse_to_players"):
+                        jump_to_player(club_id=club_id)
                     seasons = coach_browse_seasons(club_id, g_filter)
                     if seasons.empty:
                         st.info("No seasons for this club.")
                     else:
+                        season_ids = [str(x) for x in seasons["event_id"].tolist()]
+                        pending_season = st.session_state.get("coach_browse_season")
+                        if pending_season and str(pending_season) not in season_ids:
+                            season_ids = [str(pending_season)] + season_ids
                         event_id = st.selectbox(
                             "Season",
-                            options=seasons["event_id"].tolist(),
+                            options=season_ids,
                             format_func=lambda eid: (
-                                f"{int(seasons.loc[seasons['event_id']==eid,'season_year'].iloc[0]) if pd.notna(seasons.loc[seasons['event_id']==eid,'season_year'].iloc[0]) else '?'} — "
-                                f"{seasons.loc[seasons['event_id']==eid,'event_name'].iloc[0]}"
+                                f"{int(seasons.loc[seasons['event_id'].astype(str)==str(eid),'season_year'].iloc[0]) if (seasons['event_id'].astype(str)==str(eid)).any() and pd.notna(seasons.loc[seasons['event_id'].astype(str)==str(eid),'season_year'].iloc[0]) else '?'} — "
+                                f"{seasons.loc[seasons['event_id'].astype(str)==str(eid),'event_name'].iloc[0] if (seasons['event_id'].astype(str)==str(eid)).any() else eid}"
                             ),
                             key="coach_browse_season",
                         )
@@ -897,26 +1364,45 @@ def main() -> None:
                         if team_opts.empty:
                             st.info("No teams for this club/season.")
                         else:
+                            team_ids = team_opts["team_id"].tolist()
+                            pending_team = st.session_state.get("coach_browse_team")
+                            if pending_team and pending_team not in team_ids:
+                                team_ids = [pending_team] + team_ids
                             team_id = st.selectbox(
                                 "Team",
-                                options=team_opts["team_id"].tolist(),
+                                options=team_ids,
                                 format_func=lambda tid: (
                                     f"{team_opts.loc[team_opts['team_id']==tid,'team_name'].iloc[0]}"
                                     + (
                                         f" ({team_opts.loc[team_opts['team_id']==tid,'age_group'].iloc[0]})"
-                                        if pd.notna(team_opts.loc[team_opts['team_id']==tid,'age_group'].iloc[0])
+                                        if tid in set(team_opts["team_id"]) and pd.notna(team_opts.loc[team_opts['team_id']==tid,'age_group'].iloc[0])
                                         else ""
                                     )
+                                    if tid in set(team_opts["team_id"])
+                                    else str(tid)
                                 ),
                                 key="coach_browse_team",
                             )
-                            trow = team_opts.loc[team_opts["team_id"] == team_id].iloc[0]
-                            if st.button("Open this team in Deep-Dive", key="coach_browse_team_dd"):
+                            trow = (
+                                team_opts.loc[team_opts["team_id"] == team_id].iloc[0]
+                                if team_id in set(team_opts["team_id"])
+                                else None
+                            )
+                            b1, b2, b3 = st.columns(3)
+                            if trow is not None and b1.button("Open team Deep-Dive", key="coach_browse_team_dd"):
                                 jump_to_team_deep_dive(
                                     trow.get("program_id"),
                                     event_id=str(event_id),
                                     age_group=trow.get("age_group"),
                                     ages=ages,
+                                )
+                            if b2.button("View club", key="coach_browse_team_club"):
+                                jump_to_club(club_id)
+                            if b3.button("Team players", key="coach_browse_team_players"):
+                                jump_to_player(
+                                    club_id=club_id,
+                                    event_id=str(event_id),
+                                    team_id=team_id,
                                 )
                             people = coach_browse_coaches(team_id, str(event_id))
                             if people.empty:
@@ -975,12 +1461,16 @@ def main() -> None:
                         lambda x: round(float(x), 3) if pd.notna(x) else x
                     )
                 st.dataframe(show, width="stretch", hide_index=True)
-                render_team_deep_dive_links(
+                render_cross_links(
                     career,
                     key_prefix=f"coach_dd_{sid}",
                     program_ids=program_id_set,
                     ages=ages,
+                    teams_df=teams,
+                    programs_df=programs,
+                    show_coaches=False,
                 )
+                st.caption("Use **Team / Club / Players** to jump to related views for that season.")
 
                 year_roll = coach_year_rollup(career)
                 left, right = st.columns(2)
@@ -1041,8 +1531,22 @@ def main() -> None:
                     )
                     st.markdown("**By club**")
                     st.dataframe(club_summary, width="stretch", hide_index=True)
-
-                st.caption("Click **View team** to jump into Team / Program Deep-Dive for that season.")
+                    if not club_summary.empty and "club_name" in career.columns:
+                        # Link first few clubs from career
+                        club_ids = (
+                            career.dropna(subset=["club_id"])[["club_id", "club_name"]]
+                            .drop_duplicates("club_id")
+                            .head(8)
+                        )
+                        if not club_ids.empty:
+                            st.markdown("**Jump to club**")
+                            cols = st.columns(min(4, len(club_ids)))
+                            for i, (_, crow) in enumerate(club_ids.iterrows()):
+                                if cols[i % len(cols)].button(
+                                    str(crow["club_name"])[:28],
+                                    key=f"coach_club_jump_{sid}_{crow['club_id']}",
+                                ):
+                                    jump_to_club(crow["club_id"])
 
 
 if __name__ == "__main__":

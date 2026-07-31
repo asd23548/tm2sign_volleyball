@@ -200,6 +200,7 @@ def load_coach_career(staff_id: str, matches: pd.DataFrame | None = None) -> pd.
             t.program_label,
             t.age_group,
             t.age_num,
+            c.club_id,
             c.club_name,
             e.event_name,
             e.start_date,

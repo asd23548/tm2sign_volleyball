@@ -22,8 +22,11 @@ def test_streamlit_helpers_importable(monkeypatch) -> None:
 
     assert callable(app.filter_by_gender)
     assert callable(app.jump_to_team_deep_dive)
-    assert callable(app.apply_pending_deep_dive)
-    assert callable(app.render_team_deep_dive_links)
+    assert callable(app.jump_to_club)
+    assert callable(app.jump_to_player)
+    assert callable(app.jump_to_coach)
+    assert callable(app.apply_pending_jumps)
+    assert callable(app.render_cross_links)
 
     # filter_by_gender basic behavior
     import pandas as pd
