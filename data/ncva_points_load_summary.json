@@ -1,0 +1,10 @@
+{
+  "sources_attempted": 73,
+  "sources_ok": 31,
+  "sources_empty_or_error": 42,
+  "rows_upserted_this_run": 2176,
+  "points_rows_total": 2175,
+  "team_codes_matched_to_teams": 925,
+  "errors": [],
+  "error_count": 0
+}
