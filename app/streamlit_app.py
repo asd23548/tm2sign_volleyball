@@ -56,6 +56,13 @@ from src.analytics.players import (  # noqa: E402
     player_browse_teams,
     player_search,
 )
+from src.analytics.points import (  # noqa: E402
+    load_points_ages,
+    load_points_for_program,
+    load_points_leaderboard,
+    load_points_years,
+    load_power_league_points,
+)
 from src.db import init_database  # noqa: E402
 
 st.set_page_config(
@@ -559,7 +566,7 @@ def main() -> None:
     st.sidebar.metric("Seasons", f"{len(event_opts):,}")
     st.sidebar.caption(f"Filter: **{gender}**")
 
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
         [
             "Team / Program Deep-Dive",
             "Club Panorama",
@@ -567,6 +574,7 @@ def main() -> None:
             "Event & Seed Dynamics",
             "Player View",
             "Coach View",
+            "Power League Points",
         ]
     )
 
@@ -781,6 +789,41 @@ def main() -> None:
                                 crow["staff_id"],
                                 query=str(crow["full_name"]).split()[-1],
                             )
+
+            # NCVA published stage points for this team (via USAV team code)
+            alt = tmeta.get("alt_code")
+            if alt:
+                pts = load_power_league_points(team_code=str(alt))
+                if gender != "All" and not pts.empty:
+                    pts = pts.loc[pts["gender"] == gender]
+                if not pts.empty:
+                    st.markdown("**NCVA stage points** (from ncva.com points sheets/PDFs)")
+                    show_pts = pts[
+                        [
+                            c
+                            for c in [
+                                "season_year",
+                                "age_num",
+                                "overall_place",
+                                "plq_place",
+                                "l1_place",
+                                "l1_division",
+                                "l1_points",
+                                "l2_place",
+                                "l2_division",
+                                "l2_points",
+                                "l3_place",
+                                "l3_division",
+                                "l3_points",
+                                "region_place",
+                                "region_points",
+                                "season_total",
+                                "bid_notes",
+                            ]
+                            if c in pts.columns
+                        ]
+                    ].copy()
+                    st.dataframe(show_pts, width="stretch", hide_index=True)
 
         if not traj.empty:
             show = traj.copy()
@@ -1547,6 +1590,155 @@ def main() -> None:
                                     key=f"coach_club_jump_{sid}_{crow['club_id']}",
                                 ):
                                     jump_to_club(crow["club_id"])
+
+    with tab7:
+        st.subheader("Power League Points")
+        st.caption(
+            "Official NCVA stage points (PLQ / L1 / L2 / L3 / Region / Season total) "
+            "from https://ncva.com/girls-power-league-points/ — joined to teams via USAV team code."
+        )
+        g_points = "Girls" if gender == "All" else gender
+        years = load_points_years(g_points if g_points != "Boys" else "Girls")
+        if gender == "Boys":
+            st.info(
+                "Boys points page is not loaded yet (NCVA girls sources only). "
+                "Switch gender to Girls / All to browse girls points."
+            )
+            years = []
+        if not years:
+            st.warning(
+                "No points rows in the database yet. Run:\n\n"
+                "`python scripts/load_ncva_points.py`"
+            )
+        else:
+            pc1, pc2 = st.columns(2)
+            py = pc1.selectbox("Points season", options=years, key="pl_points_year")
+            ages_avail = load_points_ages(int(py), "Girls")
+            age_default = 14 if 14 in ages_avail else (ages_avail[0] if ages_avail else 14)
+            pa = pc2.selectbox(
+                "Age",
+                options=ages_avail or [age_default],
+                index=(ages_avail.index(age_default) if ages_avail and age_default in ages_avail else 0),
+                format_func=lambda a: f"{a}U",
+                key="pl_points_age",
+            )
+            board = load_points_leaderboard(int(py), int(pa), "Girls")
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Teams with points", f"{len(board):,}")
+            c2.metric(
+                "Matched to TM2 teams",
+                f"{int(board['team_id'].notna().sum()) if not board.empty else 0:,}",
+            )
+            c3.metric(
+                "Top season total",
+                f"{board['season_total'].max():.1f}" if not board.empty and board["season_total"].notna().any() else "—",
+            )
+            if board.empty:
+                st.info("No rows for this season/age.")
+            else:
+                show = board[
+                    [
+                        c
+                        for c in [
+                            "overall_place",
+                            "overall_division",
+                            "team_name",
+                            "team_code",
+                            "program_label",
+                            "club_name",
+                            "plq_place",
+                            "l1_place",
+                            "l1_division",
+                            "l1_points",
+                            "l2_place",
+                            "l2_division",
+                            "l2_points",
+                            "l3_place",
+                            "l3_division",
+                            "l3_points",
+                            "region_place",
+                            "region_points",
+                            "season_total",
+                            "bid_notes",
+                        ]
+                        if c in board.columns
+                    ]
+                ].copy()
+                st.dataframe(show, width="stretch", hide_index=True)
+
+                # Cross-links for top of board / matched programs
+                st.markdown("**Open related views**")
+                linked = board.dropna(subset=["program_id"]).head(12)
+                for i, row in linked.iterrows():
+                    cols = st.columns([3.2, 1, 1, 1])
+                    cols[0].write(
+                        f"#{int(row['overall_place']) if pd.notna(row.get('overall_place')) else '?'} "
+                        f"{row.get('team_name')} · total {row.get('season_total')}"
+                    )
+                    if row["program_id"] in program_id_set and cols[1].button(
+                        "Team",
+                        key=f"pl_pts_team_{row['team_code']}_{i}",
+                    ):
+                        jump_to_team_deep_dive(
+                            row["program_id"],
+                            ages=ages,
+                        )
+                    if pd.notna(row.get("club_id")) and cols[2].button(
+                        "Club",
+                        key=f"pl_pts_club_{row['team_code']}_{i}",
+                    ):
+                        jump_to_club(row["club_id"])
+                    if cols[3].button(
+                        "Players",
+                        key=f"pl_pts_players_{row['team_code']}_{i}",
+                    ):
+                        if pd.notna(row.get("club_id")):
+                            jump_to_player(club_id=row["club_id"])
+
+                if board["season_total"].notna().any():
+                    fig = px.bar(
+                        board.head(25),
+                        x="team_name",
+                        y="season_total",
+                        color="overall_division",
+                        title=f"{py} · {pa}U season points (top 25)",
+                        color_discrete_sequence=["#c9a227", "#8a8f98", "#1f6f5b", "#c46b2b"],
+                    )
+                    fig.update_layout(
+                        height=380,
+                        xaxis_tickangle=-35,
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                    )
+                    st.plotly_chart(fig, width="stretch")
+
+                # Program lineage points for current deep-dive program if set
+                if "team_deep_dive_program" in st.session_state:
+                    prog_pts = load_points_for_program(st.session_state["team_deep_dive_program"])
+                    if not prog_pts.empty:
+                        st.markdown("**Deep-Dive program points history**")
+                        st.dataframe(
+                            prog_pts[
+                                [
+                                    c
+                                    for c in [
+                                        "season_year",
+                                        "age_num",
+                                        "team_name",
+                                        "team_code",
+                                        "season_total",
+                                        "overall_place",
+                                        "l1_points",
+                                        "l2_points",
+                                        "l3_points",
+                                        "region_points",
+                                    ]
+                                    if c in prog_pts.columns
+                                ]
+                            ],
+                            width="stretch",
+                            hide_index=True,
+                        )
 
 
 if __name__ == "__main__":

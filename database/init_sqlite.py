@@ -206,6 +206,54 @@ CREATE TABLE IF NOT EXISTS staff_season_stints (
     PRIMARY KEY (staff_id, event_id, team_id, position)
 );
 
+-- NCVA published Power League points (PDF / Google Sheets)
+CREATE TABLE IF NOT EXISTS power_league_points (
+    points_id         TEXT PRIMARY KEY,
+    season_year       INTEGER NOT NULL,
+    gender            TEXT NOT NULL,
+    age_num           INTEGER NOT NULL,
+    team_code         TEXT NOT NULL,
+    team_name         TEXT,
+    overall_division  TEXT,
+    overall_place     INTEGER,
+    overall_rank      INTEGER,
+    plq_place         INTEGER,
+    l1_place          INTEGER,
+    l1_division       TEXT,
+    l1_points         REAL,
+    l2_place          INTEGER,
+    l2_division       TEXT,
+    l2_points         REAL,
+    l3_place          INTEGER,
+    l3_division       TEXT,
+    l3_points         REAL,
+    region_place      INTEGER,
+    region_division   TEXT,
+    region_points     REAL,
+    season_total      REAL,
+    bid_notes         TEXT,
+    source_url        TEXT,
+    source_type       TEXT,
+    fetched_at        TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_pl_points_year ON power_league_points(season_year, age_num);
+CREATE INDEX IF NOT EXISTS idx_pl_points_code ON power_league_points(team_code);
+CREATE INDEX IF NOT EXISTS idx_pl_points_total ON power_league_points(season_total);
+
+CREATE TABLE IF NOT EXISTS power_league_points_sources (
+    source_id    TEXT PRIMARY KEY,
+    season_year  INTEGER NOT NULL,
+    gender       TEXT NOT NULL,
+    age_num      INTEGER,
+    label        TEXT,
+    source_url   TEXT NOT NULL,
+    source_type  TEXT NOT NULL,
+    status       TEXT,
+    rows_loaded  INTEGER,
+    fetched_at   TEXT
+);
+
 CREATE TABLE IF NOT EXISTS roster_fetch_log (
     team_id      TEXT PRIMARY KEY,
     fetched_at   TEXT,
