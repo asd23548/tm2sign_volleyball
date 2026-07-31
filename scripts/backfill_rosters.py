@@ -106,16 +106,17 @@ def team_context(conn) -> list[dict]:
             t.gender_code,
             t.club_id,
             COALESCE(
+                t.event_id,
                 (SELECT d.event_id FROM rankings r
                  JOIN divisions d ON d.division_id = r.division_id
                  WHERE r.team_id = t.team_id LIMIT 1),
-                (SELECT d.event_id FROM matches m
-                 JOIN divisions d ON d.division_id = m.division_id
+                (SELECT m.event_id FROM matches m
                  WHERE m.team_a_id = t.team_id OR m.team_b_id = t.team_id
                  LIMIT 1)
             ) AS event_id
         FROM teams t
         WHERE t.team_id LIKE 'ST-%'
+          AND COALESCE(t.status, 'completed') != 'registered'
         """
     ).fetchall()
     # attach season year from events
@@ -136,16 +137,28 @@ def team_context(conn) -> list[dict]:
             except Exception:
                 year = None
         out.append({**dict(r), "event_id": str(eid), "season_year": year})
+    # Newest seasons first — older TM2 seasons often return empty rosters
+    out.sort(key=lambda t: (t.get("season_year") or 0, t.get("event_id") or ""), reverse=True)
     return out
 
 
-def backfill_rosters(workers: int = 3, limit: int | None = None, resume: bool = True) -> dict:
+def backfill_rosters(
+    workers: int = 3,
+    limit: int | None = None,
+    resume: bool = True,
+    min_year: int | None = None,
+) -> dict:
     import time
 
     conn = get_connection()
     ensure_roster_schema(conn)
     teams = team_context(conn)
+    if min_year is not None:
+        teams = [t for t in teams if (t.get("season_year") or 0) >= min_year]
     if resume:
+        # Only skip teams that already have persisted stints.
+        # Do not skip "empty" log rows — older runs marked rate-limits / old seasons
+        # as empty before newer seasons were prioritized.
         done_ids = {
             r["team_id"]
             for r in conn.execute(
@@ -156,21 +169,16 @@ def backfill_rosters(workers: int = 3, limit: int | None = None, resume: bool = 
                 """
             ).fetchall()
         }
-        # Also skip teams we previously marked empty
-        try:
-            empty = {
-                r["team_id"]
-                for r in conn.execute("SELECT team_id FROM roster_fetch_log WHERE status='empty'").fetchall()
-            }
-            done_ids |= empty
-        except Exception:
-            pass
         before = len(teams)
         teams = [t for t in teams if t["team_id"] not in done_ids]
-        print(f"Resume: skipping {before - len(teams)} already fetched", flush=True)
+        print(f"Resume: skipping {before - len(teams)} already persisted", flush=True)
     if limit:
         teams = teams[:limit]
-    print(f"Fetching rosters for {len(teams)} teams (workers={workers})…", flush=True)
+    years = sorted({t.get("season_year") for t in teams if t.get("season_year")}, reverse=True)
+    print(
+        f"Fetching rosters for {len(teams)} teams (workers={workers}, years={years[:6]})…",
+        flush=True,
+    )
 
     conn.execute(
         """
@@ -179,10 +187,26 @@ def backfill_rosters(workers: int = 3, limit: int | None = None, resume: bool = 
             status TEXT,
             players INTEGER,
             staff INTEGER,
-            fetched_at TEXT
+            fetched_at TEXT,
+            player_count INTEGER,
+            staff_count INTEGER,
+            error TEXT
         )
         """
     )
+    # Align Sprint-2 schema (player_count/staff_count) with backfill columns (players/staff)
+    log_cols = {r[1] for r in conn.execute("PRAGMA table_info(roster_fetch_log)").fetchall()}
+    for col, typ in (
+        ("players", "INTEGER"),
+        ("staff", "INTEGER"),
+        ("status", "TEXT"),
+        ("fetched_at", "TEXT"),
+        ("player_count", "INTEGER"),
+        ("staff_count", "INTEGER"),
+        ("error", "TEXT"),
+    ):
+        if col not in log_cols:
+            conn.execute(f"ALTER TABLE roster_fetch_log ADD COLUMN {col} {typ}")
     conn.commit()
 
     players_all = []
@@ -204,6 +228,10 @@ def backfill_rosters(workers: int = 3, limit: int | None = None, resume: bool = 
     chunk = 40
     for start in range(0, len(teams), chunk):
         batch = teams[start : start + chunk]
+        chunk_players: list[dict] = []
+        chunk_player_stints: list[dict] = []
+        chunk_staff: list[dict] = []
+        chunk_staff_stints: list[dict] = []
         with ThreadPoolExecutor(max_workers=workers) as pool:
             futures = [pool.submit(fetch_one, ctx) for ctx in batch]
             for fut in as_completed(futures):
@@ -242,6 +270,10 @@ def backfill_rosters(workers: int = 3, limit: int | None = None, resume: bool = 
                     gender_code=ctx.get("gender_code"),
                     club_id=ctx.get("club_id"),
                 )
+                chunk_players.extend(p_rows)
+                chunk_player_stints.extend(p_stints)
+                chunk_staff.extend(s_rows)
+                chunk_staff_stints.extend(s_stints)
                 players_all.extend(p_rows)
                 player_stints.extend(p_stints)
                 staff_all.extend(s_rows)
@@ -265,34 +297,34 @@ def backfill_rosters(workers: int = 3, limit: int | None = None, resume: bool = 
                     ),
                 )
                 if done % 20 == 0 or done == len(teams):
-                    conn.commit()
                     print(
                         f"  {done}/{len(teams)} ok={nonempty} empty={empty} "
                         f"players={len(players_all)} staff={len(staff_all)} errors={len(errors)}",
                         flush=True,
                     )
+        # Persist each chunk so a crash does not lose rosters already fetched
+        players_by_id = {p["player_id"]: p for p in chunk_players}
+        staff_by_id = {s["staff_id"]: s for s in chunk_staff}
+        upsert(conn, "players", list(players_by_id.values()), ["player_id"])
+        upsert(conn, "player_season_stints", chunk_player_stints, ["player_id", "event_id", "team_id"])
+        upsert(conn, "staff", list(staff_by_id.values()), ["staff_id"])
+        upsert(
+            conn,
+            "staff_season_stints",
+            chunk_staff_stints,
+            ["staff_id", "event_id", "team_id", "position"],
+        )
+        conn.commit()
+        db_p = conn.execute("SELECT COUNT(*) c FROM players").fetchone()["c"]
+        db_s = conn.execute("SELECT COUNT(*) c FROM staff").fetchone()["c"]
+        print(
+            f"  flushed chunk start={start}: "
+            f"+players={len(players_by_id)} +staff={len(staff_by_id)} "
+            f"db_players={db_p} db_staff={db_s}",
+            flush=True,
+        )
         # pause between chunks to stay under rate limit
         time.sleep(3)
-
-    # Dedup player/staff masters by id (last write wins)
-    players_by_id = {p["player_id"]: p for p in players_all}
-    staff_by_id = {s["staff_id"]: s for s in staff_all}
-
-    upsert(conn, "players", list(players_by_id.values()), ["player_id"])
-    upsert(
-        conn,
-        "player_season_stints",
-        player_stints,
-        ["player_id", "event_id", "team_id"],
-    )
-    upsert(conn, "staff", list(staff_by_id.values()), ["staff_id"])
-    upsert(
-        conn,
-        "staff_season_stints",
-        staff_stints,
-        ["staff_id", "event_id", "team_id", "position"],
-    )
-    conn.commit()
 
     summary = {
         "finished_at": datetime.utcnow().isoformat() + "Z",
@@ -316,6 +348,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--workers", type=int, default=3)
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--min-year", type=int, default=None)
     parser.add_argument("--no-resume", action="store_true")
     args = parser.parse_args()
     print(
@@ -324,6 +357,7 @@ if __name__ == "__main__":
                 workers=args.workers,
                 limit=args.limit,
                 resume=not args.no_resume,
+                min_year=args.min_year,
             ),
             indent=2,
         )

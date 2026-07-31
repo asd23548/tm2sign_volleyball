@@ -59,10 +59,16 @@ def load_coaches() -> pd.DataFrame:
     )
 
 
-def coach_search(query: str, limit: int = 50) -> pd.DataFrame:
+def coach_search(query: str, limit: int = 50, gender: str | None = None) -> pd.DataFrame:
     q = f"%{(query or '').strip()}%"
+    gender_sql = ""
+    params: list = [q, q, q]
+    if gender in ("Girls", "Boys"):
+        gender_sql = " AND (e.gender = ? OR t.gender_code = ?)"
+        params.extend([gender, "G" if gender == "Girls" else "B"])
+    params.append(limit)
     return _read_sql(
-        """
+        f"""
         SELECT
             st.staff_id,
             st.full_name,
@@ -77,12 +83,104 @@ def coach_search(query: str, limit: int = 50) -> pd.DataFrame:
         JOIN staff_season_stints ss ON ss.staff_id = st.staff_id
         LEFT JOIN teams t ON t.team_id = ss.team_id
         LEFT JOIN clubs c ON c.club_id = COALESCE(ss.club_id, t.club_id)
-        WHERE st.full_name LIKE ? OR st.last_name LIKE ? OR st.first_name LIKE ?
+        LEFT JOIN events e ON e.event_id = ss.event_id
+        WHERE (st.full_name LIKE ? OR st.last_name LIKE ? OR st.first_name LIKE ?)
+          {gender_sql}
         GROUP BY st.staff_id, st.full_name
         ORDER BY seasons DESC, head_coach_stints DESC, st.full_name
         LIMIT ?
         """,
-        [q, q, q, limit],
+        params,
+    )
+
+
+def coach_browse_clubs(gender: str | None = None) -> pd.DataFrame:
+    where = "WHERE c.club_name IS NOT NULL"
+    params: list = []
+    if gender in ("Girls", "Boys"):
+        where += " AND (e.gender = ? OR t.gender_code = ?)"
+        params.extend([gender, "G" if gender == "Girls" else "B"])
+    return _read_sql(
+        f"""
+        SELECT c.club_id, c.club_name,
+               COUNT(DISTINCT ss.staff_id) AS coaches,
+               COUNT(DISTINCT ss.event_id) AS seasons
+        FROM staff_season_stints ss
+        JOIN teams t ON t.team_id = ss.team_id
+        JOIN clubs c ON c.club_id = COALESCE(ss.club_id, t.club_id)
+        LEFT JOIN events e ON e.event_id = ss.event_id
+        {where}
+        GROUP BY c.club_id, c.club_name
+        ORDER BY c.club_name
+        """,
+        params,
+    )
+
+
+def coach_browse_seasons(club_id: str, gender: str | None = None) -> pd.DataFrame:
+    params: list = [club_id]
+    gender_sql = ""
+    if gender in ("Girls", "Boys"):
+        gender_sql = " AND (e.gender = ? OR t.gender_code = ?)"
+        params.extend([gender, "G" if gender == "Girls" else "B"])
+    return _read_sql(
+        f"""
+        SELECT e.event_id, e.event_name, e.season_year, e.start_date,
+               COUNT(DISTINCT ss.staff_id) AS coaches,
+               COUNT(DISTINCT ss.team_id) AS teams
+        FROM staff_season_stints ss
+        JOIN teams t ON t.team_id = ss.team_id
+        JOIN events e ON e.event_id = ss.event_id
+        WHERE COALESCE(ss.club_id, t.club_id) = ?
+          {gender_sql}
+        GROUP BY e.event_id, e.event_name, e.season_year, e.start_date
+        ORDER BY e.start_date
+        """,
+        params,
+    )
+
+
+def coach_browse_teams(club_id: str, event_id: str, gender: str | None = None) -> pd.DataFrame:
+    params: list = [club_id, str(event_id)]
+    gender_sql = ""
+    if gender in ("Girls", "Boys"):
+        gender_sql = " AND (e.gender = ? OR t.gender_code = ?)"
+        params.extend([gender, "G" if gender == "Girls" else "B"])
+    return _read_sql(
+        f"""
+        SELECT t.team_id, t.team_name, t.program_id, t.program_label, t.age_group,
+               COUNT(DISTINCT ss.staff_id) AS coaches
+        FROM staff_season_stints ss
+        JOIN teams t ON t.team_id = ss.team_id
+        LEFT JOIN events e ON e.event_id = ss.event_id
+        WHERE COALESCE(ss.club_id, t.club_id) = ?
+          AND ss.event_id = ?
+          {gender_sql}
+        GROUP BY t.team_id, t.team_name, t.program_id, t.program_label, t.age_group
+        ORDER BY t.team_name
+        """,
+        params,
+    )
+
+
+def coach_browse_coaches(team_id: str, event_id: str | None = None) -> pd.DataFrame:
+    params: list = [team_id]
+    event_sql = ""
+    if event_id:
+        event_sql = " AND ss.event_id = ?"
+        params.append(str(event_id))
+    return _read_sql(
+        f"""
+        SELECT st.staff_id, st.full_name, ss.position AS role, ss.season_year
+        FROM staff_season_stints ss
+        JOIN staff st ON st.staff_id = ss.staff_id
+        WHERE ss.team_id = ?
+          {event_sql}
+        ORDER BY
+          CASE ss.position WHEN 'head_coach' THEN 0 WHEN 'asst_coach' THEN 1 ELSE 2 END,
+          st.last_name, st.first_name
+        """,
+        params,
     )
 
 
@@ -102,6 +200,7 @@ def load_coach_career(staff_id: str, matches: pd.DataFrame | None = None) -> pd.
             t.program_label,
             t.age_group,
             t.age_num,
+            c.club_id,
             c.club_name,
             e.event_name,
             e.start_date,
