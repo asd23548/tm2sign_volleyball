@@ -521,20 +521,32 @@ def club_vs_club(df: pd.DataFrame) -> pd.DataFrame:
             continue
         if row["club_a_id"] == row["club_b_id"]:
             continue
-        winner_club = row["club_a_id"] if row["winner_id"] == row["team_a_id"] else row["club_b_id"]
+        club_a = row.get("club_a_name")
+        club_b = row.get("club_b_name")
+        if pd.isna(club_a) or pd.isna(club_b):
+            club_a = club_a if pd.notna(club_a) else row["club_a_id"]
+            club_b = club_b if pd.notna(club_b) else row["club_b_id"]
+        club_a = str(club_a)
+        club_b = str(club_b)
+        winner_club = (
+            club_a if row.get("winner_id") == row.get("team_a_id") else club_b
+        )
         rows.append(
             {
-                "club_a": row["club_a_name"],
-                "club_b": row["club_b_name"],
-                "winner_club": row["club_a_name"] if winner_club == row["club_a_id"] else row["club_b_name"],
+                "club_a": club_a,
+                "club_b": club_b,
+                "winner_club": winner_club,
                 "age_group": row.get("age_group"),
             }
         )
     if not rows:
         return pd.DataFrame()
     tmp = pd.DataFrame(rows)
-    # Normalize unordered pair
-    tmp["pair"] = tmp.apply(lambda r: " vs ".join(sorted([r["club_a"], r["club_b"]])), axis=1)
+    # Normalize unordered pair (string-coerce so NaNs never hit sorted())
+    tmp["pair"] = tmp.apply(
+        lambda r: " vs ".join(sorted([str(r["club_a"]), str(r["club_b"])])),
+        axis=1,
+    )
     return (
         tmp.groupby("pair", as_index=False)
         .size()
@@ -570,14 +582,15 @@ def inter_region_matrix(df: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for _, row in df.iterrows():
         ra, rb = row.get("region_a_name"), row.get("region_b_name")
-        if not ra or not rb or ra == rb:
+        if pd.isna(ra) or pd.isna(rb) or not ra or not rb or ra == rb:
             continue
+        ra, rb = str(ra), str(rb)
         winner_region = ra if row["winner_id"] == row["team_a_id"] else rb
         rows.append({"region_a": ra, "region_b": rb, "winner_region": winner_region})
     if not rows:
         return pd.DataFrame()
     tmp = pd.DataFrame(rows)
-    tmp["pair"] = tmp.apply(lambda r: tuple(sorted([r["region_a"], r["region_b"]])), axis=1)
+    tmp["pair"] = tmp.apply(lambda r: tuple(sorted([str(r["region_a"]), str(r["region_b"])])), axis=1)
     return tmp
 
 
