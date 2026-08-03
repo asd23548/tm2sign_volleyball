@@ -658,21 +658,58 @@ def main() -> None:
                 width="stretch",
                 hide_index=True,
             )
-            render_cross_links(
-                traj,
-                key_prefix="traj_dd",
-                program_ids=program_id_set,
-                ages=ages,
-                teams_df=teams,
-                programs_df=programs,
-                default_program_id=program_id,
-                show_players=False,
-                show_coaches=False,
-            )
+            if show["season_year"].notna().any() and show["win_rate"].notna().any():
+                fig = px.line(
+                    show.dropna(subset=["season_year"]),
+                    x="season_year",
+                    y="win_rate",
+                    color="age_group",
+                    markers=True,
+                    hover_data=["team_name", "event_name", "matches"],
+                    title="Win rate by season / age",
+                )
+                fig.update_layout(height=360, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                st.plotly_chart(fig, width="stretch")
+            if "final_rank" in show.columns and show["final_rank"].notna().any():
+                fig = px.line(
+                    show.dropna(subset=["season_year", "final_rank"]),
+                    x="season_year",
+                    y="final_rank",
+                    color="age_group",
+                    markers=True,
+                    hover_data=["team_name", "event_name", "initial_seed"],
+                    title="Finish by season (lower is better)",
+                )
+                fig.update_yaxes(autorange="reversed")
+                fig.update_layout(height=340, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                st.plotly_chart(fig, width="stretch")
 
-        # --- Team roster (players + coaches) for the focused team ---
+        h2h = program_h2h_matrix(filtered, program_id)
+        fav, nem = favorite_and_nemesis(h2h)
+        left, right = st.columns(2)
+        with left:
+            st.markdown("**Program Head-to-Head**")
+            st.dataframe(h2h.drop(columns=["opponent_id"], errors="ignore").head(40), width="stretch", hide_index=True)
+            if not h2h.empty:
+                fig = px.bar(
+                    h2h.head(25),
+                    x="opponent",
+                    y="win_rate",
+                    color="played",
+                    title="H2H Win Rate by Opponent Program",
+                    color_continuous_scale=["#8fbfb0", "#1f6f5b"],
+                )
+                fig.update_layout(xaxis_tickangle=-35, height=360, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                st.plotly_chart(fig, width="stretch")
+        with right:
+            st.markdown("**Favorite Targets** (≥75% WR)")
+            st.dataframe(fav.drop(columns=["opponent_id"], errors="ignore"), width="stretch", hide_index=True)
+            st.markdown("**Nemesis Programs** (≤25% WR)")
+            st.dataframe(nem.drop(columns=["opponent_id"], errors="ignore"), width="stretch", hide_index=True)
+
+        # --- Team roster / club team detail at bottom (after performance) ---
         st.subheader("Team roster")
-        st.caption("Players and coaches for the selected program / season / age — click through to their views.")
+        st.caption("Players and coaches for a specific club team — after program performance above.")
         team_pool = teams.loc[teams["program_id"] == program_id].copy() if "program_id" in teams.columns else pd.DataFrame()
         if not team_pool.empty:
             if season != "All" and "event_id" in team_pool.columns:
@@ -689,7 +726,6 @@ def main() -> None:
                     .tolist()
                 )
                 team_pool = team_pool.loc[team_pool["event_id"].astype(str).isin(year_events)]
-            # Newest seasons first for the default pick
             if "event_id" in team_pool.columns and "start_date" in event_opts.columns:
                 ev_year = event_opts[["event_id", "start_date"]].copy()
                 ev_year["event_id"] = ev_year["event_id"].astype(str)
@@ -790,7 +826,6 @@ def main() -> None:
                                 query=str(crow["full_name"]).split()[-1],
                             )
 
-            # NCVA published stage points for this team (via USAV team code)
             alt = tmeta.get("alt_code")
             if alt:
                 pts = load_power_league_points(team_code=str(alt))
@@ -824,57 +859,6 @@ def main() -> None:
                         ]
                     ].copy()
                     st.dataframe(show_pts, width="stretch", hide_index=True)
-
-        if not traj.empty:
-            show = traj.copy()
-            if show["season_year"].notna().any() and show["win_rate"].notna().any():
-                fig = px.line(
-                    show.dropna(subset=["season_year"]),
-                    x="season_year",
-                    y="win_rate",
-                    color="age_group",
-                    markers=True,
-                    hover_data=["team_name", "event_name", "matches"],
-                    title="Win rate by season / age",
-                )
-                fig.update_layout(height=360, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
-                st.plotly_chart(fig, width="stretch")
-            if "final_rank" in show.columns and show["final_rank"].notna().any():
-                fig = px.line(
-                    show.dropna(subset=["season_year", "final_rank"]),
-                    x="season_year",
-                    y="final_rank",
-                    color="age_group",
-                    markers=True,
-                    hover_data=["team_name", "event_name", "initial_seed"],
-                    title="Finish by season (lower is better)",
-                )
-                fig.update_yaxes(autorange="reversed")
-                fig.update_layout(height=340, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
-                st.plotly_chart(fig, width="stretch")
-
-        h2h = program_h2h_matrix(filtered, program_id)
-        fav, nem = favorite_and_nemesis(h2h)
-        left, right = st.columns(2)
-        with left:
-            st.markdown("**Program Head-to-Head**")
-            st.dataframe(h2h.drop(columns=["opponent_id"], errors="ignore").head(40), width="stretch", hide_index=True)
-            if not h2h.empty:
-                fig = px.bar(
-                    h2h.head(25),
-                    x="opponent",
-                    y="win_rate",
-                    color="played",
-                    title="H2H Win Rate by Opponent Program",
-                    color_continuous_scale=["#8fbfb0", "#1f6f5b"],
-                )
-                fig.update_layout(xaxis_tickangle=-35, height=360, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
-                st.plotly_chart(fig, width="stretch")
-        with right:
-            st.markdown("**Favorite Targets** (≥75% WR)")
-            st.dataframe(fav.drop(columns=["opponent_id"], errors="ignore"), width="stretch", hide_index=True)
-            st.markdown("**Nemesis Programs** (≤25% WR)")
-            st.dataframe(nem.drop(columns=["opponent_id"], errors="ignore"), width="stretch", hide_index=True)
 
     with tab2:
         st.subheader("Cross-age medals & open-tier ratio")
