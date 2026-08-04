@@ -356,8 +356,15 @@ def _perf_from_sub(sub: pd.DataFrame, is_win, subject_id: str, program_mode: boo
     }
 
 
-def program_season_trajectory(matches: pd.DataFrame, rankings: pd.DataFrame, program_id: str) -> pd.DataFrame:
-    """One row per season/age for a program lineage (e.g. Absolute Black)."""
+def program_season_trajectory(
+    matches: pd.DataFrame, rankings: pd.DataFrame | None, program_id: str
+) -> pd.DataFrame:
+    """One row per season/age for a program lineage (e.g. Absolute Black).
+
+    ``rankings`` is accepted for call-site compatibility; finish/seed come from
+    NCVA points via ``attach_points_to_trajectory`` instead of sparse TM2 ranks.
+    """
+    _ = rankings
     sub = _program_matches(matches, program_id)
     rows = []
     if not sub.empty:
@@ -393,21 +400,8 @@ def program_season_trajectory(matches: pd.DataFrame, rankings: pd.DataFrame, pro
                 }
             )
     traj = pd.DataFrame(rows)
-    if rankings is not None and not rankings.empty and "program_id" in rankings.columns:
-        rk = rankings.loc[rankings["program_id"] == program_id].copy()
-        if not rk.empty:
-            rk["season_year"] = pd.to_datetime(rk["start_date"], errors="coerce").dt.year
-            finish = (
-                rk.groupby(["season_year", "event_id", "age_num"], as_index=False)
-                .agg(
-                    final_rank=("final_rank", "min"),
-                    initial_seed=("initial_seed", "min"),
-                )
-            )
-            if not traj.empty:
-                traj = traj.merge(finish, on=["season_year", "event_id", "age_num"], how="left")
-            else:
-                traj = finish
+    # Finish / seed from TM2 rankings are sparse and often incomplete; Deep-Dive
+    # attaches NCVA Power League points (overall place, stage points) instead.
     if traj.empty:
         return traj
     return traj.sort_values(["season_year", "age_num"], na_position="last").reset_index(drop=True)
