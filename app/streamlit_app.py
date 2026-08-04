@@ -57,6 +57,8 @@ from src.analytics.players import (  # noqa: E402
     player_search,
 )
 from src.analytics.points import (  # noqa: E402
+    attach_points_by_team_code,
+    attach_points_to_trajectory,
     load_points_ages,
     load_points_for_program,
     load_points_leaderboard,
@@ -377,7 +379,9 @@ def render_cross_links(    rows: pd.DataFrame,
         bits = [str(int(season_year)) if pd.notna(season_year) else "?", str(team_name)]
         if ctx["age_group"]:
             bits.append(str(ctx["age_group"]))
-        if pd.notna(row.get("final_rank")):
+        if pd.notna(row.get("overall_place")):
+            bits.append(f"place {int(row['overall_place'])}")
+        elif pd.notna(row.get("final_rank")):
             bits.append(f"finish {int(row['final_rank'])}")
         if pd.notna(row.get("win_rate")):
             bits.append(f"WR {float(row['win_rate']):.0%}")
@@ -615,7 +619,10 @@ def main() -> None:
             program_id=program_id,
         )
         perf = program_performance_metrics(filtered, program_id)
-        traj = program_season_trajectory(matches, rankings, program_id)
+        traj = attach_points_to_trajectory(
+            program_season_trajectory(matches, rankings, program_id),
+            program_id,
+        )
         if not traj.empty:
             traj = traj.copy()
             traj["program_id"] = program_id
@@ -632,11 +639,18 @@ def main() -> None:
         )
 
         st.subheader("Age-up Trajectory")
-        st.caption("Same program lineage across seasons — e.g. Absolute Black 17U → 18U")
+        st.caption(
+            "Same program lineage across seasons — match results plus NCVA Power League "
+            "points (overall / stage place & season total) joined by USAV team code."
+        )
         if traj.empty:
             st.info("No trajectory rows for this program.")
         else:
             show = traj.copy()
+            if "win_rate" in show.columns:
+                show["win_rate"] = show["win_rate"].map(
+                    lambda x: round(float(x), 3) if pd.notna(x) else x
+                )
             st.dataframe(
                 show[
                     [
@@ -649,8 +663,18 @@ def main() -> None:
                             "matches",
                             "wins",
                             "win_rate",
-                            "initial_seed",
-                            "final_rank",
+                            "overall_place",
+                            "plq_place",
+                            "l1_place",
+                            "l1_points",
+                            "l2_place",
+                            "l2_points",
+                            "l3_place",
+                            "l3_points",
+                            "region_place",
+                            "region_points",
+                            "season_total",
+                            "bid_notes",
                         ]
                         if c in show.columns
                     ]
@@ -670,17 +694,33 @@ def main() -> None:
                 )
                 fig.update_layout(height=360, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
                 st.plotly_chart(fig, width="stretch")
-            if "final_rank" in show.columns and show["final_rank"].notna().any():
+            if "overall_place" in show.columns and show["overall_place"].notna().any():
                 fig = px.line(
-                    show.dropna(subset=["season_year", "final_rank"]),
+                    show.dropna(subset=["season_year", "overall_place"]),
                     x="season_year",
-                    y="final_rank",
+                    y="overall_place",
                     color="age_group",
                     markers=True,
-                    hover_data=["team_name", "event_name", "initial_seed"],
-                    title="Finish by season (lower is better)",
+                    hover_data=[
+                        c
+                        for c in ["team_name", "season_total", "l1_place", "l2_place", "l3_place"]
+                        if c in show.columns
+                    ],
+                    title="NCVA overall place by season (lower is better)",
                 )
                 fig.update_yaxes(autorange="reversed")
+                fig.update_layout(height=340, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                st.plotly_chart(fig, width="stretch")
+            elif "season_total" in show.columns and show["season_total"].notna().any():
+                fig = px.line(
+                    show.dropna(subset=["season_year", "season_total"]),
+                    x="season_year",
+                    y="season_total",
+                    color="age_group",
+                    markers=True,
+                    hover_data=[c for c in ["team_name", "overall_place"] if c in show.columns],
+                    title="NCVA season points total by season",
+                )
                 fig.update_layout(height=340, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
                 st.plotly_chart(fig, width="stretch")
 
@@ -1221,7 +1261,9 @@ def main() -> None:
                                 )
 
             if pid:
-                stints = enrich_player_stints_with_team_perf(load_player_stints(pid), matches)
+                stints = attach_points_by_team_code(
+                    enrich_player_stints_with_team_perf(load_player_stints(pid), matches)
+                )
                 if gender != "All" and "event_id" in stints.columns:
                     # Keep stints that overlap current gender events
                     gender_events = set(event_opts["event_id"].astype(str))
@@ -1240,9 +1282,12 @@ def main() -> None:
                             "matches",
                             "wins",
                             "win_rate",
-                            "initial_seed",
-                            "final_rank",
-                            "bracket_finish",
+                            "overall_place",
+                            "plq_place",
+                            "l1_place",
+                            "l2_place",
+                            "l3_place",
+                            "season_total",
                             "event_name",
                         ]
                         if c in stints.columns
@@ -1265,10 +1310,13 @@ def main() -> None:
                 st.caption("Use **Team / Club / Coaches** to jump to related views for that season.")
 
                 if not show.empty and show["season_year"].notna().any():
+                    use_place = (
+                        "overall_place" in show.columns and show["overall_place"].notna().any()
+                    )
                     fig = px.scatter(
                         show.dropna(subset=["season_year"]),
                         x="season_year",
-                        y="final_rank" if show["final_rank"].notna().any() else "age_group",
+                        y="overall_place" if use_place else "age_group",
                         size="matches" if "matches" in show.columns else None,
                         hover_data=[
                             c
@@ -1276,22 +1324,23 @@ def main() -> None:
                                 "team_name",
                                 "program_label",
                                 "club_name",
-                                "initial_seed",
+                                "season_total",
                                 "win_rate",
                                 "age_group",
                             ]
                             if c in show.columns
                         ],
-                        title="Team finish by season (lower is better)"
-                        if show["final_rank"].notna().any()
-                        else "Where they played by year / age",
+                        title=(
+                            "NCVA overall place by season (lower is better)"
+                            if use_place
+                            else "Where they played by year / age"
+                        ),
                         color="program_label",
                     )
-                    if show["final_rank"].notna().any():
-                        fig.update_yaxes(autorange="reversed", title="Final rank")
+                    if use_place:
+                        fig.update_yaxes(autorange="reversed", title="Overall place")
                     fig.update_layout(height=360, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
                     st.plotly_chart(fig, width="stretch")
-                # remove old caption — replaced above
 
     with tab6:
         st.subheader("Coach View")
@@ -1452,18 +1501,25 @@ def main() -> None:
                     gender_events = set(event_opts["event_id"].astype(str))
                     career = career.loc[career["event_id"].astype(str).isin(gender_events)].copy()
                 summary = coach_career_summary(career)
+                career = attach_points_by_team_code(career)
                 k1, k2, k3, k4, k5, k6 = st.columns(6)
                 k1.metric("Seasons", summary["seasons"])
                 k2.metric("Clubs", summary["clubs"])
                 k3.metric("Teams", summary["teams"])
                 k4.metric("Career WR", f"{summary['career_win_rate']:.1%}")
-                k5.metric("Gold finishes", summary["gold"])
-                k6.metric(
-                    "Avg finish",
-                    f"{summary['avg_finish']:.1f}" if summary["avg_finish"] is not None else "—",
-                )
+                # Prefer NCVA overall place for finish KPIs when available
+                places = career["overall_place"].dropna() if "overall_place" in career.columns else pd.Series(dtype=float)
+                if not places.empty:
+                    k5.metric("1st-place seasons", int((places == 1).sum()))
+                    k6.metric("Avg overall place", f"{float(places.mean()):.1f}")
+                else:
+                    k5.metric("Gold finishes", summary["gold"])
+                    k6.metric(
+                        "Avg finish",
+                        f"{summary['avg_finish']:.1f}" if summary["avg_finish"] is not None else "—",
+                    )
 
-                st.markdown("**Career timeline** (year · club · role · team · results)")
+                st.markdown("**Career timeline** (year · club · role · team · NCVA points)")
                 show_cols = [
                     c
                     for c in [
@@ -1476,8 +1532,12 @@ def main() -> None:
                         "matches",
                         "wins",
                         "win_rate",
-                        "initial_seed",
-                        "final_rank",
+                        "overall_place",
+                        "plq_place",
+                        "l1_place",
+                        "l2_place",
+                        "l3_place",
+                        "season_total",
                         "event_name",
                     ]
                     if c in career.columns
@@ -1538,12 +1598,17 @@ def main() -> None:
                             x="season_year",
                             y="avg_finish",
                             markers=True,
-                            title="Average finish by season (lower is better)",
+                            title="Average overall place by season (NCVA points; lower is better)",
                         )
                         fig.update_yaxes(autorange="reversed")
                         fig.update_traces(line_color="#c46b2b")
                         fig.update_layout(height=340, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
                         st.plotly_chart(fig, width="stretch")
+                    place_col = (
+                        "overall_place"
+                        if "overall_place" in career.columns
+                        else "final_rank"
+                    )
                     club_summary = (
                         career.drop_duplicates(["event_id", "team_id"])
                         .groupby("club_name", as_index=False)
@@ -1551,7 +1616,7 @@ def main() -> None:
                             seasons=("season_year", "nunique"),
                             matches=("matches", "sum"),
                             wins=("wins", "sum"),
-                            gold=("final_rank", lambda s: int((s == 1).sum())),
+                            first_place=(place_col, lambda s: int((s == 1).sum())),
                         )
                         .assign(win_rate=lambda x: x["wins"] / x["matches"].replace(0, pd.NA))
                         .sort_values(["seasons", "matches"], ascending=False)

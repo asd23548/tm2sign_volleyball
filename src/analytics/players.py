@@ -48,6 +48,7 @@ def load_player_stints(player_id: str | None = None) -> pd.DataFrame:
             t.team_name,
             t.program_label,
             t.age_num,
+            t.alt_code,
             t.program_id AS team_program_id,
             c.club_name,
             e.event_name,

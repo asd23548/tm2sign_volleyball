@@ -200,6 +200,7 @@ def load_coach_career(staff_id: str, matches: pd.DataFrame | None = None) -> pd.
             t.program_label,
             t.age_group,
             t.age_num,
+            t.alt_code,
             c.club_id,
             c.club_name,
             e.event_name,
@@ -297,6 +298,7 @@ def coach_year_rollup(career: pd.DataFrame) -> pd.DataFrame:
     if career.empty:
         return pd.DataFrame()
     te = career.drop_duplicates(["season_year", "event_id", "team_id"]).copy()
+    place_col = "overall_place" if "overall_place" in te.columns else "final_rank"
     return (
         te.groupby("season_year", as_index=False)
         .agg(
@@ -304,9 +306,9 @@ def coach_year_rollup(career: pd.DataFrame) -> pd.DataFrame:
             clubs=("club_name", "nunique"),
             matches=("matches", "sum"),
             wins=("wins", "sum"),
-            avg_finish=("final_rank", "mean"),
-            best_finish=("final_rank", "min"),
-            gold=("final_rank", lambda s: int((s == 1).sum())),
+            avg_finish=(place_col, "mean"),
+            best_finish=(place_col, "min"),
+            gold=(place_col, lambda s: int((s == 1).sum())),
         )
         .assign(win_rate=lambda x: x["wins"] / x["matches"].replace(0, pd.NA))
         .sort_values("season_year")
