@@ -151,8 +151,9 @@ def attach_points_to_trajectory(traj: pd.DataFrame, program_id: str) -> pd.DataF
                 out[c] = pd.NA
         return out.drop(columns=["initial_seed", "final_rank"], errors="ignore")
 
+    pts_cols = ["season_year", "age_num"] + detail
     pts_u = (
-        pts[["season_year", "age_num", *detail]]
+        pts[pts_cols]
         .drop_duplicates(["season_year", "age_num"], keep="first")
         .copy()
     )
@@ -200,7 +201,10 @@ def attach_points_by_team_code(df: pd.DataFrame) -> pd.DataFrame:
                 out[c] = pd.NA
         return out
 
-    pts_u = pts[["season_year", "age_num", "team_code", *[c for c in detail if c != "team_code"]]].drop_duplicates(
+    pts_cols = ["season_year", "age_num", "team_code"] + [
+        c for c in detail if c != "team_code"
+    ]
+    pts_u = pts[pts_cols].drop_duplicates(
         ["season_year", "age_num", "team_code"], keep="first"
     )
     merge_right = pts_u.rename(columns={"team_code": code_col}) if code_col != "team_code" else pts_u
