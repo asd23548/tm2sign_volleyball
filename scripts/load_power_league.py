@@ -50,10 +50,20 @@ def enrich_event_from_catalog(event: dict[str, Any], catalog_row: dict[str, Any]
     return event
 
 
+def event_start_year(event: dict[str, Any]) -> int | None:
+    raw = event.get("start_date") or ""
+    try:
+        return int(str(raw)[:4])
+    except (TypeError, ValueError):
+        return None
+
+
 def load_power_league(
     reset: bool = True,
     workers: int = 8,
     include_future_without_matches: bool = True,
+    min_year: int | None = None,
+    max_year: int | None = None,
 ) -> dict[str, Any]:
     if reset:
         reset_database()
@@ -98,6 +108,18 @@ def load_power_league(
             ]
             CATALOG_PATH.write_text(json.dumps(catalog, indent=2), encoding="utf-8")
             print(f"[discover] {len(events)} seasons found")
+            if min_year is not None or max_year is not None:
+                before = len(events)
+                events = [
+                    e
+                    for e in events
+                    if (min_year is None or (event_start_year(e) or 0) >= min_year)
+                    and (max_year is None or (event_start_year(e) or 9999) <= max_year)
+                ]
+                print(
+                    f"[discover] year filter {min_year or '*'}–{max_year or '*'}: "
+                    f"{len(events)}/{before} seasons"
+                )
 
             catalog_by_id = {c["id"]: c for c in catalog}
 
@@ -307,6 +329,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Load full NCVA Power League history")
     parser.add_argument("--no-reset", action="store_true", help="Do not wipe existing DB")
     parser.add_argument("--workers", type=int, default=8)
+    parser.add_argument("--min-year", type=int, default=None, help="Only events with start_date >= this year")
+    parser.add_argument("--max-year", type=int, default=None, help="Only events with start_date <= this year")
     parser.add_argument("--event-id", type=int, action="append", help="Load only these event IDs")
     args = parser.parse_args()
 
@@ -355,6 +379,11 @@ if __name__ == "__main__":
             conn.close()
         print(json.dumps({"db_counts": exact, **summary}, indent=2))
     else:
-        out = load_power_league(reset=not args.no_reset, workers=args.workers)
+        out = load_power_league(
+            reset=not args.no_reset,
+            workers=args.workers,
+            min_year=args.min_year,
+            max_year=args.max_year,
+        )
         print(json.dumps({k: out[k] for k in ("league", "db_counts", "errors", "db")}, indent=2))
         print(f"Events loaded: {len(out['events'])}")
