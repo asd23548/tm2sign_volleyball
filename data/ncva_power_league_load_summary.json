@@ -1,13 +1,42 @@
 {
   "league": "NCVA Power League",
-  "db_counts": {
-    "matches": 35739,
-    "events": 8,
-    "teams": 4236,
-    "rankings": 3302,
-    "clubs": 388,
-    "divisions": 55,
-    "regions": 4
+  "started_at": "2026-08-08T08:51:18.925328Z",
+  "events": [],
+  "totals": {
+    "regions": 0,
+    "clubs": 0,
+    "teams": 0,
+    "events": 0,
+    "divisions": 0,
+    "matches": 0,
+    "rankings": 0
   },
-  "scored_matches": 35721
+  "errors": [
+    {
+      "event_id": 1823,
+      "name": "2025 NCVA Girls Power League",
+      "error": "table teams has no column named club_team_id"
+    },
+    {
+      "event_id": 2136,
+      "name": "2026 NCVA Girls Power League",
+      "error": "table teams has no column named club_team_id"
+    },
+    {
+      "event_id": 2585,
+      "name": "2027 NCVA Girls Power League",
+      "error": "table teams has no column named club_team_id"
+    }
+  ],
+  "db_counts": {
+    "regions": 2,
+    "clubs": 181,
+    "teams": 3302,
+    "events": 8,
+    "divisions": 54,
+    "matches": 35739,
+    "rankings": 3302
+  },
+  "finished_at": "2026-08-08T08:51:34.787947Z",
+  "db": "/home/runner/work/tm2sign_volleyball/tm2sign_volleyball/database/volleyball.db"
 }

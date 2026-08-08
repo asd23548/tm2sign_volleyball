@@ -1,0 +1,91 @@
+{
+  "started_at": "2026-08-08T08:51:18Z",
+  "min_year": 2025,
+  "current_year": 2026,
+  "steps": {
+    "matches": {
+      "ok": true,
+      "started_at": "2026-08-08T08:51:18Z",
+      "finished_at": "2026-08-08T08:51:34Z",
+      "result": {
+        "events_loaded": 0,
+        "db_counts": {
+          "regions": 2,
+          "clubs": 181,
+          "teams": 3302,
+          "events": 8,
+          "divisions": 54,
+          "matches": 35739,
+          "rankings": 3302
+        },
+        "error_count": 3,
+        "errors": [
+          {
+            "event_id": 1823,
+            "name": "2025 NCVA Girls Power League",
+            "error": "table teams has no column named club_team_id"
+          },
+          {
+            "event_id": 2136,
+            "name": "2026 NCVA Girls Power League",
+            "error": "table teams has no column named club_team_id"
+          },
+          {
+            "event_id": 2585,
+            "name": "2027 NCVA Girls Power League",
+            "error": "table teams has no column named club_team_id"
+          }
+        ]
+      }
+    },
+    "points": {
+      "ok": true,
+      "started_at": "2026-08-08T08:51:34Z",
+      "finished_at": "2026-08-08T08:51:41Z",
+      "result": {
+        "sources_attempted": 15,
+        "sources_ok": 15,
+        "sources_empty_or_error": 0,
+        "rows_upserted_this_run": 1317,
+        "points_rows_total": 2175,
+        "team_codes_matched_to_teams": 925,
+        "errors": [],
+        "error_count": 0
+      }
+    },
+    "rosters_new": {
+      "ok": true,
+      "started_at": "2026-08-08T08:51:41Z",
+      "finished_at": "2026-08-08T08:54:09Z",
+      "result": {
+        "finished_at": "2026-08-08T08:54:09.986072Z",
+        "teams_attempted": 420,
+        "teams_with_roster": 0,
+        "players": 15044,
+        "player_stints": 22207,
+        "staff": 2421,
+        "staff_stints": 5267,
+        "errors": [],
+        "error_count": 0
+      }
+    },
+    "rosters_current": {
+      "ok": true,
+      "started_at": "2026-08-08T08:54:09Z",
+      "finished_at": "2026-08-08T08:58:04Z",
+      "result": {
+        "finished_at": "2026-08-08T08:58:04.863559Z",
+        "teams_attempted": 879,
+        "teams_with_roster": 794,
+        "players": 15044,
+        "player_stints": 22207,
+        "staff": 2421,
+        "staff_stints": 5267,
+        "errors": [],
+        "error_count": 0
+      }
+    }
+  },
+  "finished_at": "2026-08-08T08:58:04Z",
+  "ok": true
+}
