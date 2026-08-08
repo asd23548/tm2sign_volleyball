@@ -1,0 +1,51 @@
+name: Daily data refresh
+
+on:
+  schedule:
+    # 08:00 UTC ≈ 01:00 Pacific
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-data-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Refresh TM2 + NCVA points + rosters
+        id: refresh
+        continue-on-error: true
+        run: python scripts/daily_refresh.py --min-year $(( $(date -u +%Y) - 1 )) --workers 4 --roster-workers 2
+
+      - name: Commit updated database if changed
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add database/volleyball.db data/daily_refresh_summary.json data/ncva_points_load_summary.json data/roster_backfill_summary.json data/ncva_power_league_load_summary.json || true
+          if git diff --cached --quiet; then
+            echo "No data changes to commit"
+          else
+            git commit -m "Daily data refresh $(date -u +%Y-%m-%d)"
+            git push
+          fi

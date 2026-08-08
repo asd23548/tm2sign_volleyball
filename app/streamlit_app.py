@@ -7,6 +7,7 @@ Run:
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -451,7 +452,21 @@ def render_cross_links(    rows: pd.DataFrame,
 
 def main() -> None:
     st.title("NCVA Power League Analytics")
-    st.caption("Full historical Power League — program lineage across ages/years")
+    refresh_meta = PROJECT_ROOT / "data" / "daily_refresh_summary.json"
+    if refresh_meta.exists():
+        try:
+            refresh_info = json.loads(refresh_meta.read_text(encoding="utf-8"))
+            finished = str(refresh_info.get("finished_at") or "")[:10]
+            ok = refresh_info.get("ok")
+            status = "ok" if ok else "with errors"
+            st.caption(
+                f"Full historical Power League — program lineage across ages/years. "
+                f"Last daily refresh: {finished or 'unknown'} ({status})."
+            )
+        except Exception:
+            st.caption("Full historical Power League — program lineage across ages/years")
+    else:
+        st.caption("Full historical Power League — program lineage across ages/years")
 
     # Apply queued cross-view jumps before target widgets exist
     apply_pending_jumps()
@@ -471,6 +486,15 @@ def main() -> None:
         return
 
     st.sidebar.markdown("### NCVA Power League")
+    if refresh_meta.exists():
+        try:
+            refresh_info = json.loads(refresh_meta.read_text(encoding="utf-8"))
+            finished = str(refresh_info.get("finished_at") or "")[:16].replace("T", " ")
+            if finished:
+                st.sidebar.caption(f"Data as of {finished} UTC")
+        except Exception:
+            pass
+
     gender = st.sidebar.radio(
         "Gender",
         options=["Girls", "Boys", "All"],
