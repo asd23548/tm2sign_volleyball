@@ -1,12 +1,12 @@
 {
-  "started_at": "2026-10-13T15:49:01Z",
+  "started_at": "2026-10-14T13:33:18Z",
   "min_year": 2025,
   "current_year": 2026,
   "steps": {
     "matches": {
       "ok": true,
-      "started_at": "2026-10-13T15:49:01Z",
-      "finished_at": "2026-10-13T15:50:03Z",
+      "started_at": "2026-10-14T13:33:18Z",
+      "finished_at": "2026-10-14T13:34:21Z",
       "result": {
         "events_loaded": 0,
         "db_counts": {
@@ -40,8 +40,8 @@
     },
     "points": {
       "ok": true,
-      "started_at": "2026-10-13T15:50:03Z",
-      "finished_at": "2026-10-13T15:50:10Z",
+      "started_at": "2026-10-14T13:34:21Z",
+      "finished_at": "2026-10-14T13:34:27Z",
       "result": {
         "sources_attempted": 15,
         "sources_ok": 15,
@@ -55,10 +55,10 @@
     },
     "rosters_new": {
       "ok": true,
-      "started_at": "2026-10-13T15:50:10Z",
-      "finished_at": "2026-10-13T15:52:06Z",
+      "started_at": "2026-10-14T13:34:27Z",
+      "finished_at": "2026-10-14T13:36:24Z",
       "result": {
-        "finished_at": "2026-10-13T15:52:06.357565Z",
+        "finished_at": "2026-10-14T13:36:24.154312Z",
         "teams_attempted": 420,
         "teams_with_roster": 0,
         "players": 15044,
@@ -71,10 +71,10 @@
     },
     "rosters_current": {
       "ok": true,
-      "started_at": "2026-10-13T15:52:06Z",
-      "finished_at": "2026-10-13T15:56:08Z",
+      "started_at": "2026-10-14T13:36:24Z",
+      "finished_at": "2026-10-14T13:40:25Z",
       "result": {
-        "finished_at": "2026-10-13T15:56:08.293672Z",
+        "finished_at": "2026-10-14T13:40:25.745507Z",
         "teams_attempted": 879,
         "teams_with_roster": 794,
         "players": 15044,
@@ -86,6 +86,6 @@
       }
     }
   },
-  "finished_at": "2026-10-13T15:56:08Z",
+  "finished_at": "2026-10-14T13:40:25Z",
   "ok": true
 }
