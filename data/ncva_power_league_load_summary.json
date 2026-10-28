@@ -1,6 +1,6 @@
 {
   "league": "NCVA Power League",
-  "started_at": "2026-10-27T14:17:46.374452Z",
+  "started_at": "2026-10-28T14:59:57.217761Z",
   "events": [],
   "totals": {
     "regions": 0,
@@ -37,6 +37,6 @@
     "matches": 35739,
     "rankings": 3302
   },
-  "finished_at": "2026-10-27T14:18:47.742450Z",
+  "finished_at": "2026-10-28T15:00:59.039779Z",
   "db": "/home/runner/work/tm2sign_volleyball/tm2sign_volleyball/database/volleyball.db"
 }
