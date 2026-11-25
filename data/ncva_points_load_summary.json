@@ -1,8 +1,8 @@
 {
-  "sources_attempted": 15,
-  "sources_ok": 15,
+  "sources_attempted": 0,
+  "sources_ok": 0,
   "sources_empty_or_error": 0,
-  "rows_upserted_this_run": 1317,
+  "rows_upserted_this_run": 0,
   "points_rows_total": 2175,
   "team_codes_matched_to_teams": 925,
   "errors": [],
